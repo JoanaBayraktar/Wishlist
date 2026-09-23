@@ -55,9 +55,22 @@ input{font-family:var(--sans)}
 @media (prefers-reduced-motion:reduce){.nowbar .dot{animation:none}}
 .nowbar b{color:var(--ink);font-weight:600}
 
+
+.quicks{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.quicks:empty{display:none}
+.quick img{width:34px;height:34px;border-radius:5px;flex:none;object-fit:cover;background:var(--line)}
+.quick{display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:var(--panel-2);border:1px solid var(--line);border-left:3px solid var(--hot);border-radius:10px;padding:10px 13px;color:var(--ink)}
+.quick:active{background:var(--line)}
+.quick .qt{font-size:16px;font-weight:600;flex:none;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.quick .qt u{text-decoration:none;color:var(--hot)}
+.quick .qa{font-size:13px;color:var(--ink-3);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.quick .qp{font-size:11px;color:var(--cool);flex:none}
+.quick.spent{opacity:.42;border-left-color:var(--cool);cursor:default}
 .results{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:8px}
 .res{display:flex;align-items:center;gap:13px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:11px;text-align:left;width:100%;color:var(--ink)}
 .res:active{background:var(--panel-2)}
+.res.spent{opacity:.42;cursor:default}
+.res.spent:active{background:var(--panel)}
 .res img{width:56px;height:56px;border-radius:7px;flex:none;object-fit:cover;background:var(--panel-2)}
 .res .t{flex:1;min-width:0}
 .res .t b{display:block;font-size:16px;font-weight:600;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -71,12 +84,20 @@ input{font-family:var(--sans)}
 .flash.cool{background:var(--cool);color:#04231d}
 .flash.warn{background:var(--gold);color:#241a00}
 
-.queue-peek{margin-top:26px}
-.queue-peek h3{font-family:var(--disp);font-size:13px;font-weight:700;color:var(--ink-3);margin:0 0 9px;letter-spacing:.3px}
-.peek{list-style:none;margin:0;padding:0;display:grid;gap:5px}
-.peek li{display:flex;align-items:center;gap:9px;font-size:14px;color:var(--ink-2);padding:7px 11px;background:var(--panel);border-radius:9px}
-.peek li .v{font-family:var(--disp);font-weight:700;color:var(--hot);font-size:13px;flex:none;min-width:22px}
-.peek li .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.queue-peek{margin-top:30px}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0 0 11px}
+.sec-h h3{font-family:var(--disp);font-size:14px;font-weight:700;color:var(--ink-2);margin:0;letter-spacing:.2px}
+.sec-h span{font-size:12px;color:var(--ink-3)}
+.grid{list-style:none;margin:0;padding:0;display:grid;gap:9px;grid-template-columns:repeat(auto-fill,minmax(212px,1fr))}
+.card{display:flex;align-items:center;gap:11px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:9px;width:100%;text-align:left;color:var(--ink);position:relative;overflow:hidden}
+.card img{width:48px;height:48px;border-radius:6px;flex:none;object-fit:cover;background:var(--panel-2)}
+.card .t{flex:1;min-width:0}
+.card .t b{display:block;font-size:14.5px;font-weight:600;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card .t span{display:block;font-size:12.5px;color:var(--ink-3);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card .badge{font-family:var(--disp);font-weight:800;font-size:13px;color:var(--hot);flex:none;padding-right:2px}
+.card.sug:active{background:var(--panel-2)}
+.card.spent{opacity:.4}
+.card.spent .badge{color:var(--cool);font-family:var(--sans);font-weight:600;font-size:11px}
 
 /* ---------- dj ---------- */
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:6px 0 16px}
@@ -96,6 +117,18 @@ input{font-family:var(--sans)}
 .djrow .acts{display:flex;gap:6px;flex:none}
 .djrow .acts button{background:var(--panel-2);color:var(--ink-2);border:1px solid var(--line);font-size:12px;padding:7px 10px}
 .djrow .acts button.ok{color:var(--cool)}
+.djrow .acts button.star.on{color:var(--gold);border-color:var(--gold)}
+.setbox{margin:18px 0 0}
+.srcbox{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;font-size:13.5px;line-height:1.6;color:var(--ink-2)}
+.srcbox b{color:var(--ink)}
+.srcbox button{background:transparent;color:var(--ink-2);border:1px solid var(--line);font-size:12px;padding:6px 11px}
+.setrow{display:flex;align-items:center;gap:11px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:9px;margin-top:7px}
+.setrow img{width:42px;height:42px;border-radius:6px;flex:none;object-fit:cover;background:var(--panel-2)}
+.setrow .t{flex:1;min-width:0}
+.setrow .t b{display:block;font-size:14.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.setrow .t span{display:block;font-size:12.5px;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.setrow button{flex:none;background:var(--panel-2);border:1px solid var(--line);color:var(--ink-2);font-size:12px;padding:7px 11px}
+.setrow button.on{background:var(--gold);color:#241a00;border-color:var(--gold)}
 
 .empty{text-align:center;color:var(--ink-3);padding:46px 16px;font-size:14px;line-height:1.6}
 .empty b{display:block;font-family:var(--disp);font-size:21px;color:var(--ink-2);margin-bottom:6px}
@@ -139,11 +172,13 @@ input{font-family:var(--sans)}
       <input type="text" id="q" placeholder="Song oder Artist…" autocomplete="off" autocorrect="off" spellcheck="false">
     </div>
     <div class="nowbar hide" id="nowbar"><span class="dot"></span><span>Läuft gerade: <b id="nowTxt"></b></span></div>
+    <div class="quicks" id="quick"></div>
     <ul class="results" id="results"></ul>
-    <div class="queue-peek" id="peekWrap">
-      <h3>Steht schon auf der Liste</h3>
-      <ul class="peek" id="peek"></ul>
-    </div>
+
+    <section class="queue-peek hide" id="peekWrap">
+      <div class="sec-h"><h3>Steht schon auf der Liste</h3><span id="peekMore"></span></div>
+      <ul class="grid" id="peek"></ul>
+    </section>
   </section>
 
   <!-- dj -->
@@ -154,6 +189,12 @@ input{font-family:var(--sans)}
       <div class="stat"><b id="sTotal">0</b><span>Wünsche</span></div>
     </div>
     <ul class="djlist" id="djlist"></ul>
+
+    <div class="setbox">
+      <div class="sec-h"><h3>Vorschläge</h3><span id="setCount"></span></div>
+      <div id="setList"></div>
+    </div>
+
     <div class="foot">
       <button id="refreshBtn">Jetzt aktualisieren</button>
       <button id="resetBtn">Abend beenden</button>
@@ -178,16 +219,122 @@ const SCOPES = [
   "user-read-private"
 ].join(" ");
 const PLAYLIST_NAME = "Songwünsche";
+const SUGGEST_NAME  = "All Time Classic Party Hits by Joey";
 const POLL_MS = 30000;          // Hörverlauf-Abgleich
 const REDIRECT = location.origin + location.pathname;
 
 /* ===================== STATE ===================== */
 const LS = {
   tok:"sw_token", ref:"sw_refresh", exp:"sw_expires",
-  ver:"sw_verifier", pl:"sw_playlist", wishes:"sw_wishes"
+  ver:"sw_verifier", pl:"sw_playlist", wishes:"sw_wishes", known:"sw_known"
 };
 let token=null, playlistId=null, me=null;
-let wishes=[];   // {id,name,artist,img,uri,votes,ts,played,playedAt}
+let wishes=[];   // {id,name,artist,img,uri,key,votes,ts,played,playedAt}
+let known=[];    // Vorschlagsliste aus songs.json: {t,a,n} (n = normalisierter Suchtext)
+
+let suggestSrc="";   // woher die Vorschläge kommen (für die DJ-Ansicht)
+
+// Vorschläge aus der Spotify-Playlist; Ergebnis wird lokal zwischengespeichert
+async function loadKnown(){
+  const cached=readKnownCache();
+  if(cached){ known=cached.list; suggestSrc=cached.src; renderSetList(); }
+  try{
+    const pl=await findSuggestPlaylist();
+    if(pl){
+      if(cached && cached.snapshot===pl.snapshot_id && cached.list.length){
+        suggestSrc=SUGGEST_NAME+" ("+cached.list.length+" Songs)";
+        renderSetList(); return;
+      }
+      const list=await fetchPlaylistTracks(pl.id);
+      if(list.length){
+        known=list;
+        suggestSrc=SUGGEST_NAME+" ("+list.length+" Songs)";
+        writeKnownCache(pl.snapshot_id,suggestSrc,list);
+        renderSetList(); return;
+      }
+    }
+  }catch(e){}
+  if(!known.length) await loadKnownFallback();
+  renderSetList();
+}
+
+async function findSuggestPlaylist(){
+  let url="/me/playlists?limit=50", guard=0;
+  while(url && guard++<6){
+    const page=await api(url.replace("https://api.spotify.com/v1",""));
+    const hit=(page.items||[]).find(p=>p && p.name && p.name.trim().toLowerCase()===SUGGEST_NAME.toLowerCase());
+    if(hit) return hit;
+    url=page.next||null;
+  }
+  return null;
+}
+
+async function fetchPlaylistTracks(id){
+  const out=[]; let guard=0;
+  let url="/playlists/"+id+"/items?limit=50";
+  while(url && guard++<10){
+    let page;
+    try{ page=await api(url.replace("https://api.spotify.com/v1","")); }
+    catch(e){ page=await api(url.replace("https://api.spotify.com/v1","").replace("/items","/tracks")); }
+    (page.items||[]).forEach(it=>{
+      const t=it&&it.track; if(!t||!t.id) return;
+      const artist=(t.artists||[]).map(a=>a.name).join(", ");
+      out.push({
+        id:t.id, uri:t.uri, name:t.name, artist:artist,
+        img:(t.album&&t.album.images&&t.album.images.length)?t.album.images[t.album.images.length-1].url:"",
+        key:songKey(t.name,artist), n:norm(t.name+" "+artist)
+      });
+    });
+    url=page.next||null;
+  }
+  return out;
+}
+
+// Notfalls die mitgelieferte songs.json (nur Titel/Interpret, wird bei Auswahl gesucht)
+async function loadKnownFallback(){
+  try{
+    const r=await fetch("songs.json",{cache:"no-cache"});
+    if(!r.ok) return;
+    const raw=await r.json();
+    known=(raw||[]).filter(s=>s&&s.t).map(s=>({
+      id:null, uri:null, name:s.t, artist:s.a||"", img:"",
+      key:songKey(s.t,s.a||""), n:norm(s.t+" "+(s.a||""))
+    }));
+    suggestSrc="songs.json aus dem Repo ("+known.length+" Songs)";
+  }catch(e){ known=[]; }
+}
+
+function readKnownCache(){
+  try{
+    const c=JSON.parse(store.get(LS.known,"null"));
+    if(c&&Array.isArray(c.list)&&c.list.length) return c;
+  }catch(e){}
+  return null;
+}
+function writeKnownCache(snapshot,src,list){
+  store.set(LS.known,JSON.stringify({snapshot:snapshot,src:src,list:list}));
+}
+
+function norm(s){
+  return (s||"").toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/ß/g,"ss")
+    .replace(/[^a-z0-9]+/g," ").trim();
+}
+// Treffer aus der bekannten Liste, Wortanfänge zuerst
+function knownMatches(term,limit){
+  const q=norm(term);
+  if(!q) return [];
+  const hits=[];
+  for(const s of known){
+    const i=s.n.indexOf(q);
+    if(i<0) continue;
+    const startsWord = i===0 || s.n[i-1]===" ";
+    hits.push({s,rank:(i===0?0:startsWord?1:2)});
+  }
+  hits.sort((x,y)=>x.rank-y.rank);
+  return hits.slice(0,limit||4).map(h=>h.s);
+}
 let mode="kiosk";
 let pollTimer=null, searchTimer=null;
 
@@ -437,14 +584,18 @@ function sorted(){
 
 function renderResults(list){
   const ul=$("#results");
-  // Bereits gespielte Songs komplett ausblenden – auch andere Fassungen davon
-  list=list.filter(t=>{ const w=matchWish(t); return !(w&&w.played); });
   if(!list.length){ ul.innerHTML=""; return; }
   ul.innerHTML=list.map(t=>{
     const w=matchWish(t);
     let tag='<span class="tag add">Wünschen</span>';
-    if(w) tag='<span class="tag dup">+1 ('+w.votes+'×)</span>';
-    return '<li><button class="res" data-id="'+t.id+'">'+
+    let cls="res", dis="";
+    if(w&&w.played){
+      tag='<span class="tag done">schon gespielt</span>';
+      cls="res spent"; dis=" disabled";
+    } else if(w){
+      tag='<span class="tag dup">+1 ('+w.votes+'×)</span>';
+    }
+    return '<li><button class="'+cls+'" data-id="'+t.id+'"'+dis+'>'+
       (t.img?'<img src="'+esc(t.img)+'" alt="">':'<img alt="">')+
       '<span class="t"><b>'+esc(t.name)+'</b><span>'+esc(t.artist)+'</span></span>'+
       tag+'</button></li>';
@@ -452,12 +603,19 @@ function renderResults(list){
   ul._data=list;
 }
 
+function cardHtml(t,badge,cls){
+  return '<li><button class="card '+(cls||"")+'" data-id="'+esc(t.id)+'">'+
+    (t.img?'<img src="'+esc(t.img)+'" alt="">':'<img alt="">')+
+    '<span class="t"><b>'+esc(t.name)+'</b><span>'+esc(t.artist)+'</span></span>'+
+    (badge?'<span class="badge">'+badge+'</span>':'')+
+  '</button></li>';
+}
+
 function renderPeek(){
-  const open=sorted().filter(w=>!w.played).slice(0,6);
+  const open=sorted().filter(w=>!w.played);
   $("#peekWrap").classList.toggle("hide",open.length===0);
-  $("#peek").innerHTML=open.map(w=>
-    '<li><span class="v">'+w.votes+'×</span><span class="nm">'+esc(w.name)+' – '+esc(w.artist)+'</span></li>'
-  ).join("");
+  $("#peekMore").textContent = open.length>8 ? ("+"+(open.length-8)+" weitere") : "";
+  $("#peek").innerHTML=open.slice(0,8).map(w=>cardHtml(w,w.votes+"×","")).join("");
 }
 
 function renderDj(){
@@ -493,6 +651,11 @@ $("#loginBtn").addEventListener("click",()=>login().catch(e=>showErr("#gateErr",
 $("#q").addEventListener("input",function(){
   const term=this.value.trim();
   clearTimeout(searchTimer);
+  const typing=term.length>=1;
+  $("#peekWrap").classList.toggle("hide",typing||sorted().filter(w=>!w.played).length===0);
+  if(!typing){ $("#results").innerHTML=""; $("#quick").innerHTML=""; return; }
+  // Sofort: Treffer aus der mitgelieferten Songliste, ohne auf Spotify zu warten
+  renderQuick(knownMatches(term,3),term);
   if(term.length<2){ $("#results").innerHTML=""; return; }
   searchTimer=setTimeout(async()=>{
     try{ renderResults(await search(term)); }
@@ -507,7 +670,8 @@ $("#results").addEventListener("click",e=>{
   const t=list.find(x=>x.id===btn.dataset.id);
   if(!t) return;
   addWish(t);
-  $("#q").value=""; $("#results").innerHTML=""; $("#q").focus();
+  $("#q").value=""; $("#results").innerHTML=""; $("#quick").innerHTML=""; $("#q").focus();
+  renderPeek();
 });
 
 $("#djlist").addEventListener("click",async e=>{
@@ -528,14 +692,70 @@ $("#djlist").addEventListener("click",async e=>{
   renderDj(); renderPeek();
 });
 
+function renderQuick(list,term){
+  const box=$("#quick");
+  if(!list.length){ box.innerHTML=""; return; }
+  const q=norm(term);
+  box.innerHTML=list.map((s,i)=>{
+    const played=wishes.some(w=>w.played&&w.key===s.key);
+    const ni=norm(s.name).indexOf(q);
+    let title=esc(s.name);
+    if(ni>=0&&q.length){
+      const raw=s.name;
+      title=esc(raw.slice(0,ni))+"<u>"+esc(raw.slice(ni,ni+q.length))+"</u>"+esc(raw.slice(ni+q.length));
+    }
+    return '<button class="quick'+(played?" spent":"")+'" data-i="'+i+'"'+(played?" disabled":"")+'>'+
+      (s.img?'<img src="'+esc(s.img)+'" alt="">':'<img alt="">')+
+      '<span class="qt">'+title+'</span><span class="qa">'+esc(s.artist)+'</span>'+
+      (played?'<span class="qp">schon gespielt</span>':'')+
+    '</button>';
+  }).join("");
+  box._data=list;
+}
+
+$("#quick").addEventListener("click",async e=>{
+  const b=e.target.closest("button.quick:not(.spent)");
+  if(!b) return;
+  const s=($("#quick")._data||[])[parseInt(b.dataset.i,10)];
+  if(!s) return;
+  b.disabled=true;
+  try{
+    let track=s;
+    if(!s.id){                       // nur beim songs.json-Notfall nötig
+      const hits=await search(s.name+" "+s.artist);
+      if(!hits.length){ flash("Auf Spotify nicht gefunden","warn"); b.disabled=false; return; }
+      track=hits[0];
+    }
+    addWish(track);
+    $("#q").value=""; $("#results").innerHTML=""; $("#quick").innerHTML="";
+    renderPeek(); $("#q").focus();
+  }catch(err){ flash("Gerade nicht erreichbar","warn"); b.disabled=false; }
+});
+
+function renderSetList(){
+  const cnt=$("#setCount"); if(!cnt) return;
+  cnt.textContent=suggestSrc||"wird geladen…";
+  $("#setList").innerHTML =
+    '<div class="srcbox">Die Vorschläge beim Tippen kommen aus deiner Spotify-Playlist <b>'+esc(SUGGEST_NAME)+'</b>. '+
+    'Songs dort ändern, dann hier neu laden.'+
+    '<div style="margin-top:9px"><button id="reloadKnown">Vorschläge neu laden</button></div></div>';
+  const rb=$("#reloadKnown");
+  if(rb) rb.addEventListener("click",async()=>{
+    rb.textContent="lädt…";
+    store.del(LS.known); known=[]; suggestSrc="";
+    await loadKnown();
+    flash("Vorschläge aktualisiert","cool");
+  });
+}
+
 function setMode(m){
   mode=m;
   $("#mKiosk").classList.toggle("on",m==="kiosk");
   $("#mDj").classList.toggle("on",m==="dj");
   $("#kiosk").classList.toggle("hide",m!=="kiosk");
   $("#dj").classList.toggle("hide",m!=="dj");
-  if(m==="kiosk"){ $("#q").value=""; $("#results").innerHTML=""; renderPeek(); }
-  else renderDj();
+  if(m==="kiosk"){ $("#q").value=""; $("#results").innerHTML=""; $("#quick").innerHTML=""; renderPeek(); }
+  else { renderDj(); renderSetList(); }
 }
 $("#mKiosk").addEventListener("click",()=>setMode("kiosk"));
 $("#mDj").addEventListener("click",()=>setMode("dj"));
@@ -586,6 +806,7 @@ async function boot(){
       esc(store.get("sw_scope","(unbekannt)"))+'</div>');
   }
   setMode("kiosk");
+  loadKnown();
   renderPeek(); renderDj();
   syncHistory();
   pollTimer=setInterval(syncHistory,POLL_MS);
