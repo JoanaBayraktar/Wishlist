@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light">
-<title>"Wünsch dir was!"</title>
+<title>Songwünsche</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -66,10 +66,22 @@ h2.col{font-size:clamp(28px,3.6vw,42px);font-weight:500;letter-spacing:-1.1px;li
 #q{width:100%;background:transparent;border:none;border-bottom:1.5px solid var(--ink);
   padding:12px 2px;font-size:clamp(20px,2.4vw,26px);font-weight:400;color:var(--ink);border-radius:0}
 #q::placeholder{color:var(--ink-3)}
-.nowbar{display:flex;align-items:center;gap:9px;margin-top:26px;font-size:14px;color:var(--ink-2);
-  padding-top:16px;border-top:1px solid var(--rule)}
-.nowbar .dot{width:6px;height:6px;border-radius:50%;background:var(--ok);flex:none}
-.nowbar b{font-weight:500;color:var(--ink)}
+.nowcard{margin:0 0 42px;padding-bottom:30px;border-bottom:1px solid var(--rule)}
+.nowmain{display:flex;align-items:flex-end;gap:18px;margin-bottom:22px}
+.nowmain img{width:132px;height:132px;object-fit:cover;flex:none;background:var(--rule);filter:grayscale(1)}
+.nowmeta{min-width:0;padding-bottom:2px}
+.nowmeta b{display:block;font-size:22px;font-weight:500;letter-spacing:-.5px;line-height:1.15;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nowmeta span{display:block;font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);margin-top:7px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wave{display:flex;align-items:flex-end;gap:2px;height:52px;margin-bottom:14px}
+.wave i{flex:1;background:var(--rule);min-width:2px;transition:background .25s linear}
+.wave i.on{background:var(--ink)}
+.progress{height:3px;background:var(--rule);position:relative}
+.progress span{position:absolute;inset:0 auto 0 0;background:var(--ink);width:0;transition:width .9s linear}
+.times{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-3);margin-top:8px;
+  font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion:reduce){ .wave i,.progress span{transition:none} }
 
 /* ---------- Sofortvorschläge ---------- */
 .quicks{margin-top:14px}
@@ -151,7 +163,7 @@ h2.col{font-size:clamp(28px,3.6vw,42px);font-weight:500;letter-spacing:-1.1px;li
 <body>
 
 <header class="topbar">
-  <div class="brand">Wünsch dir was!</div>
+  <div class="brand">Songwünsche</div>
   <nav class="modes" id="modeNav">
     <button id="mKiosk" class="on">Wünschen</button>
     <button id="mDj">DJ</button>
@@ -174,15 +186,29 @@ h2.col{font-size:clamp(28px,3.6vw,42px);font-weight:500;letter-spacing:-1.1px;li
 
     <section id="kiosk" class="cols">
       <div>
-        <h2 class="col">Was willst du hören? (Bitte keinen Schlager...)</h2>
+        <h2 class="col">Was willst du hören?</h2>
         <input type="text" id="q" placeholder="Song oder Artist" autocomplete="off" autocorrect="off" spellcheck="false">
         <div class="quicks" id="quick"></div>
         <ul class="results" id="results"></ul>
-        <div class="nowbar hide" id="nowbar"><span class="dot"></span><span>Läuft gerade: <b id="nowTxt"></b></span></div>
       </div>
-      <div id="peekWrap" class="hide">
-        <div class="sec-h"><h3>Als Nächstes gewünscht</h3><span id="peekMore"></span></div>
-        <ul class="grid" id="peek"></ul>
+      <div>
+        <section class="nowcard hide" id="nowbar">
+          <div class="sec-h"><h3>Läuft gerade</h3><span id="nowState"></span></div>
+          <div class="nowmain">
+            <img id="nowImg" alt="">
+            <div class="nowmeta">
+              <b id="nowTxt"></b>
+              <span id="nowArtist"></span>
+            </div>
+          </div>
+          <div class="wave" id="wave" aria-hidden="true"></div>
+          <div class="progress"><span id="progFill"></span></div>
+          <div class="times"><span id="tNow">0:00</span><span id="tEnd">0:00</span></div>
+        </section>
+        <div id="peekWrap" class="hide">
+          <div class="sec-h"><h3>Als Nächstes gewünscht</h3><span id="peekMore"></span></div>
+          <ul class="grid" id="peek"></ul>
+        </div>
       </div>
     </section>
 
@@ -228,6 +254,8 @@ const SCOPES = [
 const PLAYLIST_NAME = "Songwünsche";
 const SUGGEST_NAME  = "All Time Classic Party Hits by Joey";
 const POLL_MS = 30000;          // Hörverlauf-Abgleich
+const NOW_MS  = 5000;           // Wiedergabe-Abfrage
+const TICK_MS = 1000;           // Anzeige weiterlaufen lassen
 const REDIRECT = location.origin + location.pathname;
 
 /* ===================== STATE ===================== */
@@ -332,10 +360,12 @@ function norm(s){
 function knownMatches(term,limit){
   const q=norm(term);
   if(!q) return [];
-  const hits=[];
+  const hits=[], seen=new Set();
   for(const s of known){
     const i=s.n.indexOf(q);
     if(i<0) continue;
+    if(seen.has(s.key)) continue;    // gleiche Song, andere Fassung
+    seen.add(s.key);
     const startsWord = i===0 || s.n[i-1]===" ";
     hits.push({s,rank:(i===0?0:startsWord?1:2)});
   }
@@ -487,12 +517,19 @@ async function ensurePlaylist(){
 
 async function search(term){
   const mkt=(me&&me.country)?("&market="+encodeURIComponent(me.country)):"";
-  const j=await api("/search?type=track&limit=6"+mkt+"&q="+encodeURIComponent(term));
-  return ((j.tracks&&j.tracks.items)||[]).map(t=>({
-    id:t.id, uri:t.uri, name:t.name,
-    artist:(t.artists||[]).map(a=>a.name).join(", "),
-    img:(t.album&&t.album.images&&t.album.images.length)?t.album.images[t.album.images.length-1].url:""
-  }));
+  const j=await api("/search?type=track&limit=20"+mkt+"&q="+encodeURIComponent(term));
+  const out=[], seen=new Set();
+  ((j.tracks&&j.tracks.items)||[]).forEach(t=>{
+    const artist=(t.artists||[]).map(a=>a.name).join(", ");
+    const k=songKey(t.name,artist);
+    if(seen.has(k)) return;          // andere Fassung desselben Songs
+    seen.add(k);
+    out.push({
+      id:t.id, uri:t.uri, name:t.name, artist:artist,
+      img:(t.album&&t.album.images&&t.album.images.length)?t.album.images[t.album.images.length-1].url:""
+    });
+  });
+  return out.slice(0,6);
 }
 
 /* ===================== WUNSCH-LOGIK ===================== */
@@ -557,28 +594,78 @@ async function syncHistory(){
       const w=findWish(it.track.id)||findByKey(songKey(it.track.name,art));
       if(w&&!w.played){ markPlayed(w,new Date(it.played_at).getTime()); changed=true; }
     });
-    let nowTxt="";
-    try{
-      const cur=await api("/me/player/currently-playing");
-      if(cur&&cur.item){
-        const art=(cur.item.artists||[]).map(a=>a.name).join(", ");
-        nowTxt=cur.item.name+" – "+art;
-        const w=findWish(cur.item.id)||findByKey(songKey(cur.item.name,art));
-        if(w&&!w.played){ markPlayed(w); changed=true; }
-      }
-    }catch(e){}
-    setNow(nowTxt);
     $("#syncInfo").textContent="Zuletzt abgeglichen: "+new Date().toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
     if(changed){ renderPeek(); renderDj(); }
   }catch(e){
     $("#syncInfo").textContent="Abgleich gerade nicht möglich ("+e.message+")";
   }
 }
-function setNow(txt){
-  const bar=$("#nowbar");
-  if(txt){ $("#nowTxt").textContent=txt; bar.classList.remove("hide"); }
-  else bar.classList.add("hide");
+/* ===================== LÄUFT GERADE ===================== */
+const WAVE_BARS=56;
+let nowState=null;     // {id,name,artist,img,progress,duration,playing,at}
+let waveFor=null;      // für welche Track-ID die Balken gezeichnet sind
+
+// gleicher Track -> gleiches Balkenbild
+function waveHeights(seed){
+  let x=0; for(let i=0;i<(seed||"x").length;i++) x=(x*31+seed.charCodeAt(i))>>>0;
+  const h=[];
+  for(let i=0;i<WAVE_BARS;i++){
+    x=(x*1664525+1013904223)>>>0;
+    const base=0.32+0.68*Math.abs(Math.sin(i*0.37));
+    h.push(Math.round((base*0.6+(x%1000)/1000*0.4)*100));
+  }
+  return h;
 }
+function drawWave(id){
+  if(waveFor===id) return;
+  waveFor=id;
+  $("#wave").innerHTML=waveHeights(id||"x")
+    .map(p=>'<i style="height:'+Math.max(8,p)+'%"></i>').join("");
+}
+function fmtMs(ms){
+  const s=Math.max(0,Math.floor(ms/1000));
+  return Math.floor(s/60)+":"+String(s%60).padStart(2,"0");
+}
+function paintNow(){
+  const card=$("#nowbar");
+  if(!nowState){ card.classList.add("hide"); return; }
+  card.classList.remove("hide");
+  const n=nowState;
+  const pos = n.playing ? Math.min(n.duration, n.progress + (Date.now()-n.at)) : n.progress;
+  const ratio = n.duration ? pos/n.duration : 0;
+  $("#nowTxt").textContent=n.name;
+  $("#nowArtist").textContent=n.artist;
+  $("#nowState").textContent = n.playing ? "" : "pausiert";
+  const img=$("#nowImg");
+  if(n.img){ img.src=n.img; img.style.visibility="visible"; } else img.style.visibility="hidden";
+  drawWave(n.id);
+  const bars=$("#wave").children, cut=Math.round(ratio*bars.length);
+  for(let i=0;i<bars.length;i++) bars[i].classList.toggle("on",i<cut);
+  $("#progFill").style.width=(ratio*100).toFixed(2)+"%";
+  $("#tNow").textContent=fmtMs(pos);
+  $("#tEnd").textContent=fmtMs(n.duration);
+  if(n.playing && pos>=n.duration) pollNow();   // Track vorbei -> frisch holen
+}
+async function pollNow(){
+  try{
+    const cur=await api("/me/player/currently-playing");
+    if(cur&&cur.item){
+      const artist=(cur.item.artists||[]).map(a=>a.name).join(", ");
+      nowState={
+        id:cur.item.id, name:cur.item.name, artist:artist,
+        img:(cur.item.album&&cur.item.album.images&&cur.item.album.images.length)
+              ? cur.item.album.images[0].url : "",
+        progress:cur.progress_ms||0, duration:cur.item.duration_ms||0,
+        playing:!!cur.is_playing, at:Date.now()
+      };
+      const w=findWish(cur.item.id)||findByKey(songKey(cur.item.name,artist));
+      if(w&&!w.played){ await markPlayed(w); renderPeek(); renderDj(); }
+    } else nowState=null;
+  }catch(e){ /* Panel bleibt stehen */ }
+  paintNow();
+}
+
+function setNow(){ paintNow(); }
 
 /* ===================== RENDER ===================== */
 function sorted(){
@@ -767,7 +854,7 @@ function setMode(m){
 $("#mKiosk").addEventListener("click",()=>setMode("kiosk"));
 $("#mDj").addEventListener("click",()=>setMode("dj"));
 
-$("#refreshBtn").addEventListener("click",syncHistory);
+$("#refreshBtn").addEventListener("click",()=>{syncHistory();pollNow();});
 $("#resetBtn").addEventListener("click",()=>{
   if(!confirm("Alle Wünsche des Abends löschen? Die Spotify-Playlist bleibt bestehen.")) return;
   wishes=[]; saveWishes(); renderDj(); renderPeek(); flash("Liste geleert","cool");
@@ -815,8 +902,10 @@ async function boot(){
   setMode("kiosk");
   loadKnown();
   renderPeek(); renderDj();
-  syncHistory();
+  syncHistory(); pollNow();
   pollTimer=setInterval(syncHistory,POLL_MS);
+  setInterval(pollNow,NOW_MS);
+  setInterval(paintNow,TICK_MS);
 }
 boot();
 })();
