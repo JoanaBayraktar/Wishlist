@@ -171,6 +171,7 @@ input{font-family:var(--sans)}
 const CLIENT_ID = "c4eadcad998d4361a45cf0b759a59f4e";
 const SCOPES = [
   "playlist-modify-private",
+  "playlist-modify-public",
   "playlist-read-private",
   "user-read-recently-played",
   "user-read-currently-playing",
@@ -198,7 +199,12 @@ const store = {
   set(k,v){ try{localStorage.setItem(k,v);}catch(e){} },
   del(k){ try{localStorage.removeItem(k);}catch(e){} }
 };
-function loadWishes(){ try{wishes=JSON.parse(store.get(LS.wishes,"[]"))||[];}catch(e){wishes=[];} }
+function loadWishes(){
+  try{wishes=JSON.parse(store.get(LS.wishes,"[]"))||[];}catch(e){wishes=[];}
+  let fixed=false;
+  wishes.forEach(w=>{ if(!w.key){ w.key=songKey(w.name,w.artist); fixed=true; } });
+  if(fixed) saveWishes();
+}
 function saveWishes(){ store.set(LS.wishes, JSON.stringify(wishes)); }
 
 let flashTimer=null;
@@ -315,7 +321,7 @@ async function ensurePlaylist(){
     if(hit){ playlistId=hit.id; store.set(LS.pl,playlistId); return; }
   }catch(e){}
   try{
-    const made=await api("/users/"+me.id+"/playlists",{method:"POST",body:{
+    const made=await api("/me/playlists",{method:"POST",body:{
       name:PLAYLIST_NAME, public:false,
       description:"Wünsche von heute Abend – füllt sich automatisch."
     }});
@@ -336,10 +342,29 @@ async function search(term){
 }
 
 /* ===================== WUNSCH-LOGIK ===================== */
+// Erkennt denselben Song auch in anderer Fassung (Album/Single/Remaster).
+function songKey(name,artist){
+  const t=(name||"")
+    .toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    // Zusätze wie "- 2011 Remaster", "(Radio Edit)", "[Single Version]" abschneiden
+    .replace(/[\(\[][^\)\]]*(remaster|remastered|version|edit|mono|stereo|deluxe|bonus|anniversary)[^\)\]]*[\)\]]/g,"")
+    .replace(/\s[-–]\s.*(remaster|remastered|version|edit|mono|stereo|deluxe|bonus|anniversary).*$/,"")
+    .replace(/[^a-z0-9]+/g," ").trim();
+  const a=(artist||"").split(",")[0]
+    .toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/[^a-z0-9]+/g," ").trim();
+  return t+"|"+a;
+}
 function findWish(id){ return wishes.find(w=>w.id===id); }
+function findByKey(key){ return wishes.find(w=>w.key===key); }
+function matchWish(track){
+  return findWish(track.id) || findByKey(songKey(track.name,track.artist));
+}
 
 async function addWish(track){
-  const ex=findWish(track.id);
+  const ex=matchWish(track);
   if(ex){
     if(ex.played){ flash("Lief heute schon", "cool"); return; }
     ex.votes++; saveWishes(); renderPeek();
@@ -347,12 +372,13 @@ async function addWish(track){
     return;
   }
   const w={id:track.id,uri:track.uri,name:track.name,artist:track.artist,img:track.img,
+           key:songKey(track.name,track.artist),
            votes:1,ts:Date.now(),played:false,playedAt:null};
   wishes.push(w); saveWishes(); renderPeek(); renderDj();
   flash("Kommt auf die Liste");
   if(!playlistId) return;
   try{
-    await api("/playlists/"+playlistId+"/tracks",{method:"POST",body:{uris:[track.uri]}});
+    await api("/playlists/"+playlistId+"/items",{method:"POST",body:{uris:[track.uri]}});
   }catch(e){
     flash("Playlist-Fehler – steht aber auf der Liste","warn");
   }
@@ -363,7 +389,7 @@ async function markPlayed(w,when){
   w.played=true; w.playedAt=when||Date.now(); saveWishes();
   if(!playlistId) return;
   try{
-    await api("/playlists/"+playlistId+"/tracks",{method:"DELETE",body:{tracks:[{uri:w.uri}]}});
+    await api("/playlists/"+playlistId+"/items",{method:"DELETE",body:{tracks:[{uri:w.uri}]}});
   }catch(e){}
 }
 
@@ -373,15 +399,17 @@ async function syncHistory(){
     let changed=false;
     (j.items||[]).forEach(it=>{
       if(!it.track) return;
-      const w=findWish(it.track.id);
+      const art=(it.track.artists||[]).map(a=>a.name).join(", ");
+      const w=findWish(it.track.id)||findByKey(songKey(it.track.name,art));
       if(w&&!w.played){ markPlayed(w,new Date(it.played_at).getTime()); changed=true; }
     });
     let nowTxt="";
     try{
       const cur=await api("/me/player/currently-playing");
       if(cur&&cur.item){
-        nowTxt=cur.item.name+" – "+(cur.item.artists||[]).map(a=>a.name).join(", ");
-        const w=findWish(cur.item.id);
+        const art=(cur.item.artists||[]).map(a=>a.name).join(", ");
+        nowTxt=cur.item.name+" – "+art;
+        const w=findWish(cur.item.id)||findByKey(songKey(cur.item.name,art));
         if(w&&!w.played){ markPlayed(w); changed=true; }
       }
     }catch(e){}
@@ -409,12 +437,13 @@ function sorted(){
 
 function renderResults(list){
   const ul=$("#results");
+  // Bereits gespielte Songs komplett ausblenden – auch andere Fassungen davon
+  list=list.filter(t=>{ const w=matchWish(t); return !(w&&w.played); });
   if(!list.length){ ul.innerHTML=""; return; }
   ul.innerHTML=list.map(t=>{
-    const w=findWish(t.id);
+    const w=matchWish(t);
     let tag='<span class="tag add">Wünschen</span>';
-    if(w&&w.played) tag='<span class="tag done">lief schon</span>';
-    else if(w) tag='<span class="tag dup">+1 ('+w.votes+'×)</span>';
+    if(w) tag='<span class="tag dup">+1 ('+w.votes+'×)</span>';
     return '<li><button class="res" data-id="'+t.id+'">'+
       (t.img?'<img src="'+esc(t.img)+'" alt="">':'<img alt="">')+
       '<span class="t"><b>'+esc(t.name)+'</b><span>'+esc(t.artist)+'</span></span>'+
@@ -490,11 +519,11 @@ $("#djlist").addEventListener("click",async e=>{
   if(b.dataset.a==="play") await markPlayed(w);
   if(b.dataset.a==="unplay"){
     w.played=false; w.playedAt=null; saveWishes();
-    try{ await api("/playlists/"+playlistId+"/tracks",{method:"POST",body:{uris:[w.uri]}}); }catch(err){}
+    try{ await api("/playlists/"+playlistId+"/items",{method:"POST",body:{uris:[w.uri]}}); }catch(err){}
   }
   if(b.dataset.a==="drop"){
     wishes=wishes.filter(x=>x.id!==id); saveWishes();
-    try{ await api("/playlists/"+playlistId+"/tracks",{method:"DELETE",body:{tracks:[{uri:w.uri}]}}); }catch(err){}
+    try{ await api("/playlists/"+playlistId+"/items",{method:"DELETE",body:{tracks:[{uri:w.uri}]}}); }catch(err){}
   }
   renderDj(); renderPeek();
 });
