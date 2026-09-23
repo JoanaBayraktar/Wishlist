@@ -278,6 +278,25 @@ h2.col{font-size:clamp(28px,3.6vw,42px);font-weight:500;letter-spacing:-1.1px;li
 @media (prefers-reduced-motion:reduce){
   .flash.added .ok-circle,.flash.added .ok-check{animation:none;stroke-dashoffset:0}
 }
+
+/* ---------- Bestätigen ---------- */
+.confirm{position:fixed;inset:0;background:rgba(20,20,20,.45);display:flex;align-items:center;
+  justify-content:center;z-index:40;padding:22px;
+  animation:confirmIn .2s ease both}
+.confirm-box{background:var(--paper);width:100%;max-width:25rem;padding:28px 26px;border-radius:3px}
+.confirm-track{display:flex;align-items:center;gap:14px;margin-bottom:20px}
+.confirm-track img{width:58px;height:58px;object-fit:cover;background:var(--rule);flex:none}
+.confirm-t{min-width:0}
+.confirm-t b{display:block;font-size:18px;font-weight:500;letter-spacing:-.2px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.confirm-t span{display:block;font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);
+  margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.confirm-q{font-size:16px;color:var(--ink);margin:0 0 24px;font-weight:500;letter-spacing:-.2px}
+.confirm-acts{display:flex;justify-content:flex-end;align-items:center;gap:26px}
+#confirmCancel{font-size:14px;color:var(--ink-2);border-bottom:1px solid var(--rule);padding:2px 0}
+#confirmOk{font-size:15px;padding:12px 26px}
+@keyframes confirmIn{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){ .confirm{animation:none} }
 </style>
 </head>
 <body>
@@ -372,6 +391,23 @@ h2.col{font-size:clamp(28px,3.6vw,42px);font-weight:500;letter-spacing:-1.1px;li
 
   </div>
 </main>
+
+<div class="confirm hide" id="confirmDialog">
+  <div class="confirm-box">
+    <div class="confirm-track">
+      <img id="confirmImg" alt="">
+      <div class="confirm-t">
+        <b id="confirmName"></b>
+        <span id="confirmArtist"></span>
+      </div>
+    </div>
+    <p class="confirm-q">Diesen Song wünschen?</p>
+    <div class="confirm-acts">
+      <button id="confirmCancel">Abbrechen</button>
+      <button id="confirmOk" class="big">Wünschen</button>
+    </div>
+  </div>
+</div>
 
 <script>
 
@@ -746,6 +782,32 @@ function matchWish(track){
   return findWish(track.id) || findByKey(songKey(track.name,track.artist));
 }
 
+let pendingTrack=null;
+function askAdd(track){
+  pendingTrack=track;
+  const img=$("#confirmImg");
+  if(track.img){ img.src=track.img; img.style.visibility="visible"; } else img.style.visibility="hidden";
+  $("#confirmName").textContent=track.name;
+  $("#confirmArtist").textContent=track.artist;
+  $("#confirmDialog").classList.remove("hide");
+  $("#q").blur();
+}
+function closeConfirm(){
+  pendingTrack=null;
+  $("#confirmDialog").classList.add("hide");
+}
+$("#confirmOk").addEventListener("click",()=>{
+  const t=pendingTrack;
+  closeConfirm();
+  if(t) addWish(t);
+  endSearch(); $("#q").focus();
+});
+$("#confirmCancel").addEventListener("click",closeConfirm);
+$("#confirmDialog").addEventListener("click",e=>{ if(e.target===e.currentTarget) closeConfirm(); });
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape" && !$("#confirmDialog").classList.contains("hide")) closeConfirm();
+});
+
 async function addWish(track){
   const ex=matchWish(track);
   if(ex){
@@ -1000,9 +1062,9 @@ $("#quick").addEventListener("click",async e=>{
       if(!hits.length){ flash("Auf Spotify nicht gefunden","warn"); b.disabled=false; return; }
       track=hits[0];
     }
-    addWish(track);
-    endSearch(); $("#q").focus();
-  }catch(err){ flash("Gerade nicht erreichbar","warn"); b.disabled=false; }
+    askAdd(track);
+  }catch(err){ flash("Gerade nicht erreichbar","warn"); }
+  b.disabled=false;
 });
 
 function renderSetList(){
@@ -1119,8 +1181,7 @@ $("#results").addEventListener("click",e=>{
   const list=$("#results")._data||[];
   const t=list.find(x=>x.id===btn.dataset.id);
   if(!t) return;
-  addWish(t);
-  endSearch(); $("#q").focus();
+  askAdd(t);
 });
 
 $("#djlist").addEventListener("click",async e=>{
