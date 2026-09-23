@@ -275,6 +275,7 @@ function keepToken(j){
   token=j.access_token;
   store.set(LS.tok,token);
   if(j.refresh_token) store.set(LS.ref,j.refresh_token);
+  if(j.scope) store.set("sw_scope",j.scope);
   store.set(LS.exp, String(Date.now()+(j.expires_in||3600)*1000));
 }
 function tokenAlive(){
@@ -308,14 +309,20 @@ async function ensurePlaylist(){
   if(saved){
     try{ await api("/playlists/"+saved+"?fields=id"); playlistId=saved; return; }catch(e){}
   }
-  const page=await api("/me/playlists?limit=50");
-  const hit=(page.items||[]).find(p=>p && p.name===PLAYLIST_NAME && p.owner && p.owner.id===me.id);
-  if(hit){ playlistId=hit.id; store.set(LS.pl,playlistId); return; }
-  const made=await api("/users/"+me.id+"/playlists",{method:"POST",body:{
-    name:PLAYLIST_NAME, public:false,
-    description:"Wünsche von heute Abend – füllt sich automatisch."
-  }});
-  playlistId=made.id; store.set(LS.pl,playlistId);
+  try{
+    const page=await api("/me/playlists?limit=50");
+    const hit=(page.items||[]).find(p=>p && p.name===PLAYLIST_NAME && p.owner && p.owner.id===me.id);
+    if(hit){ playlistId=hit.id; store.set(LS.pl,playlistId); return; }
+  }catch(e){}
+  try{
+    const made=await api("/users/"+me.id+"/playlists",{method:"POST",body:{
+      name:PLAYLIST_NAME, public:false,
+      description:"Wünsche von heute Abend – füllt sich automatisch."
+    }});
+    playlistId=made.id; store.set(LS.pl,playlistId);
+  }catch(e){
+    playlistId=null;   // App läuft trotzdem, nur ohne Playlist-Sync
+  }
 }
 
 async function search(term){
@@ -343,6 +350,7 @@ async function addWish(track){
            votes:1,ts:Date.now(),played:false,playedAt:null};
   wishes.push(w); saveWishes(); renderPeek(); renderDj();
   flash("Kommt auf die Liste");
+  if(!playlistId) return;
   try{
     await api("/playlists/"+playlistId+"/tracks",{method:"POST",body:{uris:[track.uri]}});
   }catch(e){
@@ -353,6 +361,7 @@ async function addWish(track){
 async function markPlayed(w,when){
   if(w.played) return;
   w.played=true; w.playedAt=when||Date.now(); saveWishes();
+  if(!playlistId) return;
   try{
     await api("/playlists/"+playlistId+"/tracks",{method:"DELETE",body:{tracks:[{uri:w.uri}]}});
   }catch(e){}
@@ -542,6 +551,11 @@ async function boot(){
   }
   $("#gate").classList.add("hide");
   $("#app").classList.remove("hide");
+  if(!playlistId){
+    $("#kiosk").insertAdjacentHTML("afterbegin",
+      '<div class="err">Ohne Playlist-Sync: Wünsche werden gesammelt und der Hörverlauf abgeglichen, aber nichts nach Spotify geschrieben.<br>Erteilte Rechte: '+
+      esc(store.get("sw_scope","(unbekannt)"))+'</div>');
+  }
   setMode("kiosk");
   renderPeek(); renderDj();
   syncHistory();
