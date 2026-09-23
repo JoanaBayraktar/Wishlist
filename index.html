@@ -1086,16 +1086,15 @@ $("#q").addEventListener("keydown",e=>{
 
 $("#clearBtn").addEventListener("click",endSearch);
 
-// Beim Scrollen (z.B. um in den Treffern zu suchen) Tastatur schließen –
-// aber nicht direkt nach dem Fokussieren, sonst schließt das automatische
-// Ins-Bild-Scrollen beim Tippen die Tastatur sofort wieder
+// Beim Scrollen (z.B. um in den Treffern zu suchen) Tastatur schließen.
+// Nur echtes Fingerziehen (touchmove) zählt als Scrollen – der "scroll"-Event
+// feuert auch, wenn sich beim Tippen die Trefferliste durch DOM-Änderungen
+// verschiebt, und hätte die Tastatur mitten im Tippen wieder zugeklappt.
 let qFocusedAt=0;
 $("#q").addEventListener("focus",()=>{ qFocusedAt=Date.now(); });
-function blurIfScrolling(){
+window.addEventListener("touchmove",()=>{
   if(document.activeElement===$("#q") && Date.now()-qFocusedAt>500) $("#q").blur();
-}
-window.addEventListener("touchmove",blurIfScrolling,{passive:true});
-window.addEventListener("scroll",blurIfScrolling,{passive:true});
+},{passive:true});
 
 $("#foldBtn").addEventListener("click",()=>{
   const card=$("#nowbar");
