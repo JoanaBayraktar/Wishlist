@@ -3,208 +3,215 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Songwünsche</title>
+<meta name="color-scheme" content="light">
+<title>"Wünsch dir was!"</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#0d0b14; --panel:#181327; --panel-2:#211a36; --line:#2f2549;
-  --ink:#f4f0fb; --ink-2:#a698c6; --ink-3:#6d5f91;
-  --hot:#ff5a3c; --hot-ink:#1a0600;
-  --cool:#4dd6c1; --cool-dim:#153630;
-  --gold:#f0c24b;
-  --r:12px;
-  --sans:'Inter',system-ui,sans-serif;
-  --disp:'Archivo',var(--sans);
+  --sun:#edbe4b;
+  --paper:#f5f4f1;
+  --white:#fff;
+  --ink:#141414;
+  --ink-2:#5c5a55;
+  --ink-3:#95928b;
+  --rule:#e2e0da;
+  --pop:#e2593f;
+  --ok:#2f7d63;
+  --r:4px;
+  --sans:'Instrument Sans',system-ui,-apple-system,sans-serif;
 }
 *{box-sizing:border-box}
-html,body{margin:0;padding:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-text-size-adjust:100%}
-body{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-button{font-family:var(--sans);cursor:pointer;border:none;border-radius:9px}
-button:focus-visible,input:focus-visible{outline:2px solid var(--hot);outline-offset:2px}
-input{font-family:var(--sans)}
-
-/* ---------- shell ---------- */
-.shell{max-width:840px;margin:0 auto;padding:0 18px 60px}
-.bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 0 10px}
-.brand{font-family:var(--disp);font-weight:800;font-size:19px;letter-spacing:-.2px}
-.brand em{font-style:normal;color:var(--hot)}
-.modes{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:3px}
-.modes button{background:transparent;color:var(--ink-3);font-size:12.5px;font-weight:600;padding:6px 13px;border-radius:999px}
-.modes button.on{background:var(--panel-2);color:var(--ink)}
-
-/* ---------- gate ---------- */
-.gate{max-width:520px;margin:9vh auto;padding:0 20px;text-align:center}
-.gate h1{font-family:var(--disp);font-weight:800;font-size:clamp(34px,7vw,52px);line-height:.98;letter-spacing:-1.2px;margin:0 0 14px}
-.gate h1 em{font-style:normal;color:var(--hot)}
-.gate p{color:var(--ink-2);font-size:15px;line-height:1.55;margin:0 auto 26px;max-width:40ch}
-.big{background:var(--hot);color:var(--hot-ink);font-weight:700;font-size:16px;padding:15px 30px;border-radius:999px}
-.gate .fine{color:var(--ink-3);font-size:12.5px;margin-top:22px;line-height:1.6}
-
-/* ---------- kiosk ---------- */
-.kiosk-head{text-align:center;padding:26px 0 18px}
-.kiosk-head h2{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,46px);line-height:1;letter-spacing:-1px;margin:0 0 8px}
-.kiosk-head p{color:var(--ink-2);font-size:15px;margin:0}
-.searchbox{position:relative}
-#q{width:100%;background:var(--panel);border:1.5px solid var(--line);color:var(--ink);border-radius:14px;padding:18px 18px;font-size:19px}
-#q::placeholder{color:var(--ink-3)}
-.nowbar{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:10px 13px;margin:12px 0 0;font-size:13.5px;color:var(--ink-2)}
-.nowbar .dot{width:7px;height:7px;border-radius:50%;background:var(--cool);flex:none;animation:pulse 2s ease-in-out infinite}
-@keyframes pulse{50%{opacity:.35}}
-@media (prefers-reduced-motion:reduce){.nowbar .dot{animation:none}}
-.nowbar b{color:var(--ink);font-weight:600}
-
-
-.quicks{display:flex;flex-direction:column;gap:6px;margin-top:10px}
-.quicks:empty{display:none}
-.quick img{width:34px;height:34px;border-radius:5px;flex:none;object-fit:cover;background:var(--line)}
-.quick{display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:var(--panel-2);border:1px solid var(--line);border-left:3px solid var(--hot);border-radius:10px;padding:10px 13px;color:var(--ink)}
-.quick:active{background:var(--line)}
-.quick .qt{font-size:16px;font-weight:600;flex:none;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.quick .qt u{text-decoration:none;color:var(--hot)}
-.quick .qa{font-size:13px;color:var(--ink-3);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.quick .qp{font-size:11px;color:var(--cool);flex:none}
-.quick.spent{opacity:.42;border-left-color:var(--cool);cursor:default}
-.results{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:8px}
-.res{display:flex;align-items:center;gap:13px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:11px;text-align:left;width:100%;color:var(--ink)}
-.res:active{background:var(--panel-2)}
-.res.spent{opacity:.42;cursor:default}
-.res.spent:active{background:var(--panel)}
-.res img{width:56px;height:56px;border-radius:7px;flex:none;object-fit:cover;background:var(--panel-2)}
-.res .t{flex:1;min-width:0}
-.res .t b{display:block;font-size:16px;font-weight:600;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.res .t span{display:block;color:var(--ink-2);font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tag{font-size:11.5px;font-weight:600;padding:4px 9px;border-radius:999px;flex:none}
-.tag.add{background:var(--hot);color:var(--hot-ink)}
-.tag.dup{background:var(--panel-2);color:var(--gold);border:1px solid var(--line)}
-.tag.done{background:var(--cool-dim);color:var(--cool)}
-
-.flash{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--hot);color:var(--hot-ink);font-weight:700;font-size:15px;padding:13px 24px;border-radius:999px;z-index:30;box-shadow:0 8px 30px rgba(0,0,0,.5);max-width:90vw;text-align:center}
-.flash.cool{background:var(--cool);color:#04231d}
-.flash.warn{background:var(--gold);color:#241a00}
-
-.queue-peek{margin-top:30px}
-.sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0 0 11px}
-.sec-h h3{font-family:var(--disp);font-size:14px;font-weight:700;color:var(--ink-2);margin:0;letter-spacing:.2px}
-.sec-h span{font-size:12px;color:var(--ink-3)}
-.grid{list-style:none;margin:0;padding:0;display:grid;gap:9px;grid-template-columns:repeat(auto-fill,minmax(212px,1fr))}
-.card{display:flex;align-items:center;gap:11px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:9px;width:100%;text-align:left;color:var(--ink);position:relative;overflow:hidden}
-.card img{width:48px;height:48px;border-radius:6px;flex:none;object-fit:cover;background:var(--panel-2)}
-.card .t{flex:1;min-width:0}
-.card .t b{display:block;font-size:14.5px;font-weight:600;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.card .t span{display:block;font-size:12.5px;color:var(--ink-3);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.card .badge{font-family:var(--disp);font-weight:800;font-size:13px;color:var(--hot);flex:none;padding-right:2px}
-.card.sug:active{background:var(--panel-2)}
-.card.spent{opacity:.4}
-.card.spent .badge{color:var(--cool);font-family:var(--sans);font-weight:600;font-size:11px}
-
-/* ---------- dj ---------- */
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:6px 0 16px}
-.stat{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px}
-.stat b{display:block;font-family:var(--disp);font-size:27px;font-weight:800;line-height:1}
-.stat span{display:block;color:var(--ink-3);font-size:12px;margin-top:4px}
-.stat.h b{color:var(--hot)} .stat.c b{color:var(--cool)}
-
-.djlist{list-style:none;margin:0;padding:0;display:grid;gap:8px}
-.djrow{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px}
-.djrow.played{opacity:.45}
-.djrow .votes{font-family:var(--disp);font-weight:800;font-size:19px;color:var(--hot);min-width:30px;text-align:center;flex:none}
-.djrow.played .votes{color:var(--cool)}
-.djrow .t{flex:1;min-width:0}
-.djrow .t b{display:block;font-size:15.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.djrow .t span{display:block;color:var(--ink-2);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.djrow .acts{display:flex;gap:6px;flex:none}
-.djrow .acts button{background:var(--panel-2);color:var(--ink-2);border:1px solid var(--line);font-size:12px;padding:7px 10px}
-.djrow .acts button.ok{color:var(--cool)}
-.djrow .acts button.star.on{color:var(--gold);border-color:var(--gold)}
-.setbox{margin:18px 0 0}
-.srcbox{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;font-size:13.5px;line-height:1.6;color:var(--ink-2)}
-.srcbox b{color:var(--ink)}
-.srcbox button{background:transparent;color:var(--ink-2);border:1px solid var(--line);font-size:12px;padding:6px 11px}
-.setrow{display:flex;align-items:center;gap:11px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:9px;margin-top:7px}
-.setrow img{width:42px;height:42px;border-radius:6px;flex:none;object-fit:cover;background:var(--panel-2)}
-.setrow .t{flex:1;min-width:0}
-.setrow .t b{display:block;font-size:14.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.setrow .t span{display:block;font-size:12.5px;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.setrow button{flex:none;background:var(--panel-2);border:1px solid var(--line);color:var(--ink-2);font-size:12px;padding:7px 11px}
-.setrow button.on{background:var(--gold);color:#241a00;border-color:var(--gold)}
-
-.empty{text-align:center;color:var(--ink-3);padding:46px 16px;font-size:14px;line-height:1.6}
-.empty b{display:block;font-family:var(--disp);font-size:21px;color:var(--ink-2);margin-bottom:6px}
-
-.foot{margin-top:26px;padding-top:16px;border-top:1px solid var(--line);color:var(--ink-3);font-size:12.5px;line-height:1.7}
-.foot button{background:transparent;color:var(--ink-3);border:1px solid var(--line);font-size:12px;padding:6px 11px;margin-right:6px}
-.err{background:#3d1512;border:1px solid var(--hot);color:#ffd2ca;border-radius:var(--r);padding:12px 14px;font-size:13.5px;margin:12px 0;line-height:1.55}
+html,body{margin:0;padding:0;min-height:100%}
+body{
+  background:var(--sun);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:16px;
+  line-height:1.45;
+  padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);
+  -webkit-text-size-adjust:100%;
+}
+button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
+button:focus-visible,input:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+input{font:inherit}
 .hide{display:none !important}
-.spin{display:inline-block;width:13px;height:13px;border:2px solid var(--ink-3);border-top-color:transparent;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
-@keyframes sp{to{transform:rotate(360deg)}}
+
+/* ---------- Rahmen ---------- */
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:20px clamp(18px,4vw,54px)}
+.brand{font-size:17px;font-weight:600;letter-spacing:-.2px}
+.modes{display:flex;gap:22px}
+.modes button{font-size:15px;color:#7a5f14;padding:2px 0;border-bottom:1.5px solid transparent}
+.modes button.on{color:var(--ink);border-bottom-color:var(--ink)}
+.sheet{background:var(--paper);margin:0 clamp(10px,2.4vw,34px);
+  border-radius:3px;padding:clamp(24px,4vw,52px) clamp(20px,4vw,54px) 64px;min-height:78vh}
+
+/* ---------- Gate ---------- */
+.gate{max-width:34rem}
+.gate h1{font-size:clamp(38px,6vw,62px);font-weight:500;line-height:1.02;letter-spacing:-1.6px;margin:0 0 18px}
+.gate p{color:var(--ink-2);font-size:17px;max-width:46ch;margin:0 0 30px}
+.big{background:var(--ink);color:var(--white);font-size:16px;font-weight:500;padding:15px 30px;border-radius:2px}
+.big:active{opacity:.85}
+.fine{color:var(--ink-3);font-size:13.5px;margin-top:26px;max-width:46ch}
+
+/* ---------- Spalten ---------- */
+.cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:clamp(28px,5vw,72px);align-items:start}
+@media (max-width:820px){ .cols{grid-template-columns:1fr;gap:38px} }
+h2.col{font-size:clamp(28px,3.6vw,42px);font-weight:500;letter-spacing:-1.1px;line-height:1.05;margin:0 0 22px}
+.meta{font-size:11.5px;letter-spacing:.09em;color:var(--ink-3);text-transform:uppercase}
+
+/* ---------- Suche ---------- */
+#q{width:100%;background:transparent;border:none;border-bottom:1.5px solid var(--ink);
+  padding:12px 2px;font-size:clamp(20px,2.4vw,26px);font-weight:400;color:var(--ink);border-radius:0}
+#q::placeholder{color:var(--ink-3)}
+.nowbar{display:flex;align-items:center;gap:9px;margin-top:26px;font-size:14px;color:var(--ink-2);
+  padding-top:16px;border-top:1px solid var(--rule)}
+.nowbar .dot{width:6px;height:6px;border-radius:50%;background:var(--ok);flex:none}
+.nowbar b{font-weight:500;color:var(--ink)}
+
+/* ---------- Sofortvorschläge ---------- */
+.quicks{margin-top:14px}
+.quicks:empty{display:none}
+.quick{display:flex;align-items:center;gap:13px;width:100%;text-align:left;padding:9px 0;border-bottom:1px solid var(--rule)}
+.quick img{width:40px;height:40px;object-fit:cover;flex:none;background:var(--rule)}
+.quick .qt{font-size:16px;font-weight:500;flex:none;max-width:52%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.quick .qt u{text-decoration:none;color:var(--pop)}
+.quick .qa{font-size:13px;color:var(--ink-3);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.quick .qp{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ok);flex:none}
+.quick.spent{opacity:.45;cursor:default}
+
+/* ---------- Trefferliste ---------- */
+.results{list-style:none;margin:18px 0 0;padding:0}
+.res{display:flex;align-items:center;gap:15px;width:100%;text-align:left;padding:12px 0;border-bottom:1px solid var(--rule)}
+.res img{width:58px;height:58px;object-fit:cover;flex:none;background:var(--rule)}
+.res .t{flex:1;min-width:0}
+.res .t b{display:block;font-size:17px;font-weight:500;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.res .t span{display:block;font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);margin-top:3px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.res.spent{opacity:.42;cursor:default}
+.tag{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;flex:none;padding-left:10px}
+.tag.add{color:var(--ink)}
+.tag.dup{color:var(--pop)}
+.tag.done{color:var(--ok)}
+
+/* ---------- Wunschliste ---------- */
+.grid{list-style:none;margin:0;padding:0}
+.card{display:flex;align-items:center;gap:15px;width:100%;text-align:left;padding:12px 0;border-bottom:1px solid var(--rule)}
+.card img{width:74px;height:74px;object-fit:cover;flex:none;background:var(--rule)}
+.card .t{flex:1;min-width:0}
+.card .t b{display:block;font-size:17px;font-weight:500;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card .t span{display:block;font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);margin-top:3px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card .badge{font-size:15px;font-weight:500;color:var(--pop);flex:none;padding-left:8px}
+.card.spent{opacity:.42}
+.card.spent .badge{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ok)}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:0 0 14px}
+.sec-h h3{font-size:19px;font-weight:500;letter-spacing:-.3px;margin:0}
+.sec-h span{font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+
+/* ---------- DJ ---------- */
+.stats{display:flex;gap:clamp(26px,5vw,60px);margin:0 0 34px;padding-bottom:26px;border-bottom:1px solid var(--rule)}
+.stat b{display:block;font-size:clamp(32px,4vw,46px);font-weight:500;letter-spacing:-1.4px;line-height:1}
+.stat span{display:block;font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);margin-top:6px}
+.stat.h b{color:var(--pop)} .stat.c b{color:var(--ok)}
+.djlist{list-style:none;margin:0;padding:0}
+.djrow{display:flex;align-items:center;gap:16px;padding:13px 0;border-bottom:1px solid var(--rule)}
+.djrow.played{opacity:.42}
+.djrow .votes{font-size:19px;font-weight:500;color:var(--pop);min-width:34px;flex:none}
+.djrow.played .votes{color:var(--ok);font-size:13px}
+.djrow .t{flex:1;min-width:0}
+.djrow .t b{display:block;font-size:16.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.djrow .t span{display:block;font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);margin-top:2px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.djrow .acts{display:flex;gap:8px;flex:none}
+.djrow .acts button{font-size:13px;color:var(--ink-2);border-bottom:1px solid var(--rule);padding:2px 0}
+.djrow .acts button.ok{color:var(--ok);border-bottom-color:var(--ok)}
+
+.setbox{margin-top:46px;padding-top:26px;border-top:1px solid var(--rule)}
+.srcbox{font-size:14px;color:var(--ink-2);max-width:56ch}
+.srcbox b{font-weight:500;color:var(--ink)}
+.srcbox button{font-size:13px;border-bottom:1px solid var(--ink-3);padding:2px 0}
+.foot{margin-top:40px;padding-top:22px;border-top:1px solid var(--rule);font-size:13px;color:var(--ink-3)}
+.foot button{font-size:13px;color:var(--ink-2);border-bottom:1px solid var(--rule);padding:2px 0;margin-right:20px}
+
+/* ---------- Zustände ---------- */
+.empty{padding:40px 0;color:var(--ink-3);font-size:15px}
+.empty b{display:block;font-size:21px;font-weight:500;color:var(--ink-2);margin-bottom:6px;letter-spacing:-.4px}
+.err{border-left:2px solid var(--pop);padding:12px 0 12px 15px;margin:18px 0;font-size:14.5px;color:var(--ink-2);max-width:56ch}
+.err b{color:var(--ink);font-weight:500}
+.err button{font-size:13px;border-bottom:1px solid var(--ink-3);padding:2px 0;margin-top:8px;display:inline-block}
+.flash{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:var(--ink);color:var(--white);
+  font-size:15px;padding:14px 26px;border-radius:2px;z-index:30;max-width:90vw;text-align:center}
+.flash.cool{background:var(--ok)}
+.flash.warn{background:var(--pop)}
 </style>
 </head>
 <body>
 
-<!-- ============ GATE ============ -->
-<section id="gate" class="gate">
-  <h1>Song<em>wünsche</em></h1>
-  <p>Gäste suchen sich am iPad selbst ihren Track. Der landet automatisch in deiner Spotify-Playlist und verschwindet wieder, sobald du ihn gespielt hast.</p>
-  <button class="big" id="loginBtn">Mit Spotify verbinden</button>
-  <div id="gateErr"></div>
-  <p class="fine">Es wird eine private Playlist „Songwünsche" auf deinem Account angelegt. Gäste sehen nur die Suche, nie dein Konto.</p>
-</section>
+<header class="topbar">
+  <div class="brand">Wünsch dir was!</div>
+  <nav class="modes" id="modeNav">
+    <button id="mKiosk" class="on">Wünschen</button>
+    <button id="mDj">DJ</button>
+  </nav>
+</header>
 
-<!-- ============ APP ============ -->
-<div id="app" class="shell hide">
-  <div class="bar">
-    <div class="brand">Song<em>wünsche</em></div>
-    <div class="modes">
-      <button id="mKiosk" class="on">iPad</button>
-      <button id="mDj">DJ</button>
-    </div>
-  </div>
+<main class="sheet">
 
-  <!-- kiosk -->
-  <section id="kiosk">
-    <div class="kiosk-head">
-      <h2>Was willst du hören?</h2>
-      <p>Tippen, antippen, fertig.</p>
-    </div>
-    <div class="searchbox">
-      <input type="text" id="q" placeholder="Song oder Artist…" autocomplete="off" autocorrect="off" spellcheck="false">
-    </div>
-    <div class="nowbar hide" id="nowbar"><span class="dot"></span><span>Läuft gerade: <b id="nowTxt"></b></span></div>
-    <div class="quicks" id="quick"></div>
-    <ul class="results" id="results"></ul>
+  <!-- Gate -->
+  <section id="gate" class="gate">
+    <h1>Was willst du hören?</h1>
+    <p>Gäste suchen sich am iPad selbst ihren Track. Der landet in deiner Spotify-Playlist und verschwindet wieder, sobald du ihn gespielt hast.</p>
+    <button class="big" id="loginBtn">Mit Spotify verbinden</button>
+    <div id="gateErr"></div>
+    <p class="fine">Es wird eine private Playlist „Songwünsche" auf deinem Account angelegt. Gäste sehen nur die Suche, nie dein Konto.</p>
+  </section>
 
-    <section class="queue-peek hide" id="peekWrap">
-      <div class="sec-h"><h3>Steht schon auf der Liste</h3><span id="peekMore"></span></div>
-      <ul class="grid" id="peek"></ul>
+  <!-- App -->
+  <div id="app" class="hide">
+
+    <section id="kiosk" class="cols">
+      <div>
+        <h2 class="col">Was willst du hören? (Bitte keinen Schlager...)</h2>
+        <input type="text" id="q" placeholder="Song oder Artist" autocomplete="off" autocorrect="off" spellcheck="false">
+        <div class="quicks" id="quick"></div>
+        <ul class="results" id="results"></ul>
+        <div class="nowbar hide" id="nowbar"><span class="dot"></span><span>Läuft gerade: <b id="nowTxt"></b></span></div>
+      </div>
+      <div id="peekWrap" class="hide">
+        <div class="sec-h"><h3>Als Nächstes gewünscht</h3><span id="peekMore"></span></div>
+        <ul class="grid" id="peek"></ul>
+      </div>
     </section>
-  </section>
 
-  <!-- dj -->
-  <section id="dj" class="hide">
-    <div class="stats">
-      <div class="stat h"><b id="sOpen">0</b><span>offen</span></div>
-      <div class="stat c"><b id="sPlayed">0</b><span>gespielt</span></div>
-      <div class="stat"><b id="sTotal">0</b><span>Wünsche</span></div>
-    </div>
-    <ul class="djlist" id="djlist"></ul>
+    <section id="dj" class="hide">
+      <div class="stats">
+        <div class="stat h"><b id="sOpen">0</b><span>offen</span></div>
+        <div class="stat c"><b id="sPlayed">0</b><span>gespielt</span></div>
+        <div class="stat"><b id="sTotal">0</b><span>Wünsche gesamt</span></div>
+      </div>
+      <ul class="djlist" id="djlist"></ul>
 
-    <div class="setbox">
-      <div class="sec-h"><h3>Vorschläge</h3><span id="setCount"></span></div>
-      <div id="setList"></div>
-    </div>
+      <div class="setbox">
+        <div class="sec-h"><h3>Vorschläge</h3><span id="setCount"></span></div>
+        <div id="setList"></div>
+      </div>
 
-    <div class="foot">
-      <button id="refreshBtn">Jetzt aktualisieren</button>
-      <button id="resetBtn">Abend beenden</button>
-      <button id="logoutBtn">Abmelden</button>
-      <div style="margin-top:10px" id="syncInfo"></div>
-    </div>
-  </section>
-</div>
+      <div class="foot">
+        <button id="refreshBtn">Jetzt aktualisieren</button>
+        <button id="resetBtn">Abend beenden</button>
+        <button id="logoutBtn">Abmelden</button>
+        <div style="margin-top:12px" id="syncInfo"></div>
+      </div>
+    </section>
+
+  </div>
+</main>
 
 <script>
+
 (function(){
 "use strict";
 
