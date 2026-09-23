@@ -517,7 +517,7 @@ async function ensurePlaylist(){
 
 async function search(term){
   const mkt=(me&&me.country)?("&market="+encodeURIComponent(me.country)):"";
-  const j=await api("/search?type=track&limit=20"+mkt+"&q="+encodeURIComponent(term));
+  const j=await api("/search?type=track&limit=10"+mkt+"&q="+encodeURIComponent(term));
   const out=[], seen=new Set();
   ((j.tracks&&j.tracks.items)||[]).forEach(t=>{
     const artist=(t.artists||[]).map(a=>a.name).join(", ");
@@ -753,7 +753,7 @@ $("#q").addEventListener("input",function(){
   if(term.length<2){ $("#results").innerHTML=""; return; }
   searchTimer=setTimeout(async()=>{
     try{ renderResults(await search(term)); }
-    catch(e){ $("#results").innerHTML='<li class="empty">Suche gerade nicht erreichbar.</li>'; }
+    catch(e){ $("#results").innerHTML='<li class="empty"><b>Suche klemmt</b>'+esc(e.message)+'</li>'; }
   },320);
 });
 
