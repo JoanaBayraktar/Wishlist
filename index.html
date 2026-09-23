@@ -323,23 +323,32 @@ async function findSuggestPlaylist(){
 }
 
 async function fetchPlaylistTracks(id){
-  const out=[]; let guard=0;
-  let url="/playlists/"+id+"/items?limit=50";
+  const out=[]; let guard=0, sawItems=0, shape="";
+  const mkt=(me&&me.country)?("&market="+encodeURIComponent(me.country)):"";
+  let url="/playlists/"+id+"/items?limit=50"+mkt;
   while(url && guard++<10){
     let page;
     try{ page=await api(url.replace("https://api.spotify.com/v1","")); }
     catch(e){ page=await api(url.replace("https://api.spotify.com/v1","").replace("/items","/tracks")); }
-    (page.items||[]).forEach(it=>{
-      const t=it&&it.track; if(!t||!t.id) return;
+    const items=page.items||page.tracks||[];
+    items.forEach(it=>{
+      sawItems++;
+      // Je nach Endpunkt steckt der Track in .track, .item oder direkt im Eintrag
+      const t=(it&&(it.track||it.item)) || (it&&(it.id||it.uri)?it:null);
+      if(!t){ if(!shape&&it) shape=Object.keys(it).join(", "); return; }
+      const tid=t.id || (t.uri?String(t.uri).split(":").pop():null);
+      if(!tid||!t.name){ if(!shape) shape=Object.keys(t).join(", "); return; }
       const artist=(t.artists||[]).map(a=>a.name).join(", ");
+      const imgs=(t.album&&t.album.images)||t.images||[];
       out.push({
-        id:t.id, uri:t.uri, name:t.name, artist:artist,
-        img:(t.album&&t.album.images&&t.album.images.length)?t.album.images[t.album.images.length-1].url:"",
+        id:tid, uri:t.uri||("spotify:track:"+tid), name:t.name, artist:artist,
+        img:imgs.length?imgs[imgs.length-1].url:"",
         key:songKey(t.name,artist), n:norm(t.name+" "+artist)
       });
     });
     url=page.next||null;
   }
+  if(!out.length && sawItems) suggestNote="Einträge gelesen ("+sawItems+"), aber unbekannte Struktur: "+(shape||"leer");
   return out;
 }
 
