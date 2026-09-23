@@ -1074,11 +1074,16 @@ $("#q").addEventListener("input",function(){
 });
 
 $("#q").addEventListener("keydown",e=>{
-  if(e.key==="Enter"){ e.preventDefault(); endSearch(); }
+  if(e.key==="Enter"){ e.preventDefault(); $("#q").blur(); }
   if(e.key==="Escape"){ endSearch(); }
 });
 
 $("#clearBtn").addEventListener("click",endSearch);
+
+// Beim Scrollen (z.B. um in den Treffern zu suchen) Tastatur schließen
+window.addEventListener("scroll",()=>{
+  if(document.activeElement===$("#q")) $("#q").blur();
+},{passive:true});
 
 $("#foldBtn").addEventListener("click",()=>{
   const card=$("#nowbar");
