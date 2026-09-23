@@ -23,7 +23,7 @@
   --sans:'Instrument Sans',system-ui,-apple-system,sans-serif;
 }
 *{box-sizing:border-box}
-html,body{margin:0;padding:0;min-height:100%}
+html,body{margin:0;padding:0;min-height:100%;max-width:100%;overflow-x:hidden}
 body{
   background:var(--sun);
   color:var(--ink);
@@ -45,7 +45,7 @@ input{font:inherit}
 .modes{display:flex;gap:22px}
 .modes button{font-size:15px;color:#7a5f14;padding:2px 0;border-bottom:1.5px solid transparent}
 .modes button.on{color:var(--ink);border-bottom-color:var(--ink)}
-.sheet{background:var(--paper);margin:0 clamp(10px,2.4vw,34px);
+.sheet{background:var(--paper);overflow:hidden;margin:0 clamp(10px,2.4vw,34px);
   border-radius:3px;padding:clamp(24px,4vw,52px) clamp(20px,4vw,54px) 64px;min-height:78vh}
 
 /* ---------- Gate ---------- */
@@ -70,7 +70,7 @@ h2.col{font-size:clamp(28px,3.6vw,42px);font-weight:500;letter-spacing:-1.1px;li
 #q::placeholder{color:var(--ink-3)}
 #q:focus{outline:none}
 
-/* Lupe: neigt sich beim Hovern, fährt beim Klicken einmal über die Zeile */
+/* Lupe: reagiert auf Hovern und Antippen */
 .lens{flex:none;width:clamp(22px,2.2vw,26px);height:clamp(22px,2.2vw,26px);padding:0;
   display:grid;place-items:center;color:var(--ink-3)}
 .lens svg{width:100%;height:100%;fill:currentColor;
@@ -85,16 +85,68 @@ h2.col{font-size:clamp(28px,3.6vw,42px);font-weight:500;letter-spacing:-1.1px;li
   70%{transform:translateX(-4px) rotate(8deg)}
   100%{transform:translateX(0) rotate(0)}
 }
-/* während Spotify antwortet: ruhiges Pendeln */
-.searchrow.busy .lens{color:var(--pop)}
-.searchrow.busy .lens svg{animation:scan 1.1s ease-in-out infinite}
-@keyframes scan{
-  0%,100%{transform:rotate(-10deg)}
-  50%{transform:rotate(10deg)}
+/* sobald etwas im Feld steht: Lupe orange */
+.searchrow.filled .lens,
+.searchrow.filled:hover .lens,
+.searchrow.filled:focus-within .lens{color:var(--pop)}
+
+/* Kreuz zum Beenden, nur bei gefülltem Feld */
+.clear{flex:none;width:22px;height:22px;padding:0;display:none;place-items:center;color:var(--ink-3);
+  transition:color .2s ease,transform .2s ease}
+.searchrow.filled .clear{display:grid}
+.clear svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.clear:hover{color:var(--ink);transform:rotate(90deg)}
+
+@media (prefers-reduced-motion:reduce){
+  .lens svg,.lens.sweep svg,.clear{animation:none;transition:none}
+  .searchrow:hover .lens svg{transform:none}
+  .clear:hover{transform:none}
+}
+
+/* ---------- Läuft gerade: Laufschrift + Einklappen ---------- */
+.nowhead{display:flex;align-items:center;gap:12px}
+.fold{width:22px;height:22px;padding:0;display:grid;place-items:center;color:var(--ink-3);
+  transition:color .2s ease,transform .32s cubic-bezier(.34,1.2,.5,1)}
+.fold svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.fold:hover{color:var(--ink)}
+.nowcard.folded .fold{transform:rotate(-180deg)}
+.nowbody{display:grid;grid-template-rows:1fr;transition:grid-template-rows .42s cubic-bezier(.4,0,.2,1),opacity .28s ease;opacity:1}
+.nowbody>div{overflow:hidden;min-height:0}
+.nowcard.folded .nowbody{grid-template-rows:0fr;opacity:0}
+.nowcard.folded .nowmain{margin-bottom:4px}
+.nowcard.folded .nowmain img{width:54px;height:54px}
+.nowcard.folded .nowmeta b{font-size:17px}
+.nowmain img{transition:width .42s cubic-bezier(.4,0,.2,1),height .42s cubic-bezier(.4,0,.2,1)}
+.nowmain{transition:margin-bottom .42s ease}
+
+.marquee{position:relative;overflow:hidden;white-space:nowrap}
+.marquee>span{display:inline-block;white-space:nowrap;will-change:transform}
+.marquee.runs>span{animation:slide var(--dur,12s) linear infinite}
+@keyframes slide{
+  0%,12%{transform:translateX(0)}
+  88%,100%{transform:translateX(var(--shift,0px))}
 }
 @media (prefers-reduced-motion:reduce){
-  .lens svg,.lens.sweep svg,.searchrow.busy .lens svg{animation:none;transition:none}
-  .searchrow:hover .lens svg{transform:none}
+  .marquee.runs>span{animation:none}
+  .nowbody,.nowmain img,.fold{transition:none}
+}
+
+/* ---------- Mobil: nichts darf seitlich überlaufen ---------- */
+@media (max-width:560px){
+  .sheet{margin:0 8px;padding:22px 16px 48px}
+  .res img{width:48px;height:48px}
+  .card img{width:56px;height:56px}
+  .quick img{width:34px;height:34px}
+  .quick .qt{max-width:none;flex:1}
+  .quick .qa{flex:none;max-width:38%}
+  .res .t b,.card .t b{font-size:15.5px}
+  .tag{font-size:10.5px;padding-left:8px}
+  .nowmain img{width:96px;height:96px}
+  .nowmeta b{font-size:19px}
+  .djrow{flex-wrap:wrap}
+  .djrow .when{order:3}
+  .djrow .acts{order:4;margin-left:auto}
+  .stats{gap:24px}
 }
 .nowcard{margin:0 0 42px;padding-bottom:30px;border-bottom:1px solid var(--rule)}
 .nowmain{display:flex;align-items:flex-end;gap:18px;margin-bottom:22px}
@@ -118,7 +170,7 @@ h2.col{font-size:clamp(28px,3.6vw,42px);font-weight:500;letter-spacing:-1.1px;li
 .quicks:empty{display:none}
 .quick{display:flex;align-items:center;gap:13px;width:100%;text-align:left;padding:9px 0;border-bottom:1px solid var(--rule)}
 .quick img{width:40px;height:40px;object-fit:cover;flex:none;background:var(--rule)}
-.quick .qt{font-size:16px;font-weight:500;flex:none;max-width:52%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.quick .qt{font-size:16px;font-weight:500;flex:none;min-width:0;max-width:52%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .quick .qt u{text-decoration:none;color:var(--pop)}
 .quick .qa{font-size:13px;color:var(--ink-3);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .quick .qp{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ok);flex:none}
@@ -128,7 +180,7 @@ h2.col{font-size:clamp(28px,3.6vw,42px);font-weight:500;letter-spacing:-1.1px;li
 .results{list-style:none;margin:18px 0 0;padding:0}
 .res{display:flex;align-items:center;gap:15px;width:100%;text-align:left;padding:12px 0;border-bottom:1px solid var(--rule)}
 .res img{width:58px;height:58px;object-fit:cover;flex:none;background:var(--rule)}
-.res .t{flex:1;min-width:0}
+.res .t{flex:1;min-width:0;overflow:hidden}
 .res .t b{display:block;font-size:17px;font-weight:500;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .res .t span{display:block;font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);margin-top:3px;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -244,23 +296,37 @@ h2.col{font-size:clamp(28px,3.6vw,42px);font-weight:500;letter-spacing:-1.1px;li
             </svg>
           </button>
           <input type="text" id="q" placeholder="Song oder Artist" autocomplete="off" autocorrect="off" spellcheck="false">
+          <button class="clear" id="clearBtn" aria-label="Suche beenden">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5 L19 19 M19 5 L5 19"/></svg>
+          </button>
         </div>
         <div class="quicks" id="quick"></div>
         <ul class="results" id="results"></ul>
       </div>
       <div>
         <section class="nowcard hide" id="nowbar">
-          <div class="sec-h"><h3>Läuft gerade</h3><span id="nowState"></span></div>
+          <div class="sec-h">
+            <h3>Läuft gerade</h3>
+            <div class="nowhead"><span id="nowState"></span>
+              <button class="fold" id="foldBtn" aria-label="Läuft gerade einklappen">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9 L12 16 L19 9"/></svg>
+              </button>
+            </div>
+          </div>
           <div class="nowmain">
             <img id="nowImg" alt="">
             <div class="nowmeta">
-              <b id="nowTxt"></b>
+              <b class="marquee" id="nowTxt"><span></span></b>
               <span id="nowArtist"></span>
             </div>
           </div>
-          <div class="wave" id="wave" aria-hidden="true"></div>
-          <div class="progress"><span id="progFill"></span></div>
-          <div class="times"><span id="tNow">0:00</span><span id="tEnd">0:00</span></div>
+          <div class="nowbody" id="nowbody">
+            <div>
+              <div class="wave" id="wave" aria-hidden="true"></div>
+              <div class="progress"><span id="progFill"></span></div>
+              <div class="times"><span id="tNow">0:00</span><span id="tEnd">0:00</span></div>
+            </div>
+          </div>
         </section>
         <div id="peekWrap" class="hide">
           <div class="sec-h"><h3>Als Nächstes gewünscht</h3><span id="peekMore"></span></div>
@@ -455,6 +521,20 @@ function knownMatches(term,limit){
 }
 let mode="kiosk";
 let pollTimer=null, searchTimer=null;
+let searchSeq=0;
+
+// Suche beenden: Feld leeren, Treffer weg, Vorschau zurück
+function endSearch(){
+  searchSeq++;
+  clearTimeout(searchTimer);
+  const inp=$("#q");
+  inp.value="";
+  $("#results").innerHTML="";
+  $("#quick").innerHTML=""; $("#quick")._data=null; $("#quick")._items=null;
+  $("#searchrow").classList.remove("filled");
+  renderPeek();
+  inp.blur();
+}
 
 /* ===================== HELFER ===================== */
 const $ = s => document.querySelector(s);
@@ -718,6 +798,25 @@ function fmtMs(ms){
   const s=Math.max(0,Math.floor(ms/1000));
   return Math.floor(s/60)+":"+String(s%60).padStart(2,"0");
 }
+// Titel nur dann laufen lassen, wenn er wirklich zu breit ist
+let marqueeFor="";
+function setMarquee(text){
+  const box=$("#nowTxt"), inner=box.firstElementChild;
+  if(marqueeFor!==text){
+    marqueeFor=text;
+    inner.textContent=text;
+    box.classList.remove("runs");
+    requestAnimationFrame(()=>{
+      const over=inner.scrollWidth-box.clientWidth;
+      if(over>6){
+        box.style.setProperty("--shift",(-over-8)+"px");
+        box.style.setProperty("--dur",Math.max(8,(over+8)/26+6).toFixed(1)+"s");
+        box.classList.add("runs");
+      }
+    });
+  }
+}
+
 function paintNow(){
   const card=$("#nowbar");
   if(!nowState){ card.classList.add("hide"); return; }
@@ -725,7 +824,7 @@ function paintNow(){
   const n=nowState;
   const pos = n.playing ? Math.min(n.duration, n.progress + (Date.now()-n.at)) : n.progress;
   const ratio = n.duration ? pos/n.duration : 0;
-  $("#nowTxt").textContent=n.name;
+  setMarquee(n.name);
   $("#nowArtist").textContent=n.artist;
   $("#nowState").textContent = n.playing ? "" : "pausiert";
   const img=$("#nowImg");
@@ -769,6 +868,9 @@ function sorted(){
 
 function renderResults(list){
   const ul=$("#results");
+  // Songs, die oben schon als Vorschlag stehen, nicht doppelt zeigen
+  const shown=new Set((($("#quick")._data)||[]).map(s=>s.key));
+  list=list.filter(t=>!shown.has(songKey(t.name,t.artist)));
   if(!list.length){ ul.innerHTML=""; return; }
   ul.innerHTML=list.map(t=>{
     const w=matchWish(t);
@@ -861,13 +963,14 @@ function renderQuick(list,term){
       (played?'<span class="qp">schon gespielt</span>':'')+
     '</button>';
   }).join("");
-  box._data=list;
+  box._data=list.map(s=>({key:s.key||songKey(s.name,s.artist)}));
+  box._items=list;
 }
 
 $("#quick").addEventListener("click",async e=>{
   const b=e.target.closest("button.quick:not(.spent)");
   if(!b) return;
-  const s=($("#quick")._data||[])[parseInt(b.dataset.i,10)];
+  const s=($("#quick")._items||[])[parseInt(b.dataset.i,10)];
   if(!s) return;
   b.disabled=true;
   try{
@@ -878,8 +981,7 @@ $("#quick").addEventListener("click",async e=>{
       track=hits[0];
     }
     addWish(track);
-    $("#q").value=""; $("#results").innerHTML=""; $("#quick").innerHTML="";
-    renderPeek(); $("#q").focus();
+    endSearch(); $("#q").focus();
   }catch(err){ flash("Gerade nicht erreichbar","warn"); b.disabled=false; }
 });
 
@@ -941,17 +1043,35 @@ $("#q").addEventListener("input",function(){
   clearTimeout(searchTimer);
   const typing=term.length>=1;
   $("#peekWrap").classList.toggle("hide",typing||sorted().filter(w=>!w.played).length===0);
-  if(!typing){ $("#results").innerHTML=""; $("#quick").innerHTML=""; return; }
+  $("#searchrow").classList.toggle("filled",term.length>0);
+  if(!typing){ searchSeq++; $("#results").innerHTML=""; $("#quick").innerHTML=""; return; }
   // Sofort: Treffer aus der Vorschlagsliste, ohne auf Spotify zu warten
   renderQuick(knownMatches(term,3),term);
   if(term.length<2){ $("#results").innerHTML=""; return; }
   searchTimer=setTimeout(async()=>{
-    const row=$("#searchrow");
-    row.classList.add("busy");
-    try{ renderResults(await search(term)); }
-    catch(e){ $("#results").innerHTML='<li class="empty"><b>Suche klemmt</b>'+esc(e.message)+'</li>'; }
-    finally{ row.classList.remove("busy"); }
+    const mine=++searchSeq;
+    try{
+      const res=await search(term);
+      if(mine===searchSeq) renderResults(res);
+    }catch(e){
+      if(mine===searchSeq) $("#results").innerHTML='<li class="empty"><b>Suche klemmt</b>'+esc(e.message)+'</li>';
+    }
   },320);
+});
+
+$("#q").addEventListener("keydown",e=>{
+  if(e.key==="Enter"){ e.preventDefault(); endSearch(); }
+  if(e.key==="Escape"){ endSearch(); }
+});
+
+$("#clearBtn").addEventListener("click",endSearch);
+
+$("#foldBtn").addEventListener("click",()=>{
+  const card=$("#nowbar");
+  const folded=card.classList.toggle("folded");
+  store.set("sw_folded",folded?"1":"0");
+  $("#foldBtn").setAttribute("aria-label",folded?"Läuft gerade ausklappen":"Läuft gerade einklappen");
+  if(!folded) setTimeout(()=>{ marqueeFor=""; if(nowState) setMarquee(nowState.name); },450);
 });
 
 $("#lensBtn").addEventListener("click",()=>{
@@ -970,8 +1090,7 @@ $("#results").addEventListener("click",e=>{
   const t=list.find(x=>x.id===btn.dataset.id);
   if(!t) return;
   addWish(t);
-  $("#q").value=""; $("#results").innerHTML=""; $("#quick").innerHTML=""; $("#q").focus();
-  renderPeek();
+  endSearch(); $("#q").focus();
 });
 
 $("#djlist").addEventListener("click",async e=>{
@@ -998,7 +1117,7 @@ function setMode(m){
   $("#mDj").classList.toggle("on",m==="dj");
   $("#kiosk").classList.toggle("hide",m!=="kiosk");
   $("#dj").classList.toggle("hide",m!=="dj");
-  if(m==="kiosk"){ $("#q").value=""; $("#results").innerHTML=""; $("#quick").innerHTML=""; renderPeek(); }
+  if(m==="kiosk"){ endSearch(); }
   else { renderDj(); renderSetList(); }
 }
 $("#mKiosk").addEventListener("click",()=>setMode("kiosk"));
@@ -1049,6 +1168,7 @@ async function boot(){
       '<div class="err">Ohne Playlist-Sync: Wünsche werden gesammelt und der Hörverlauf abgeglichen, aber nichts nach Spotify geschrieben.<br>Erteilte Rechte: '+
       esc(store.get("sw_scope","(unbekannt)"))+'</div>');
   }
+  if(store.get("sw_folded","0")==="1") $("#nowbar").classList.add("folded");
   setMode("kiosk");
   loadKnown();
   renderPeek(); renderDj();
