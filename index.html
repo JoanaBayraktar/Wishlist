@@ -150,16 +150,21 @@ h2.col{font-size:clamp(28px,3.6vw,42px);font-weight:500;letter-spacing:-1.1px;li
 .djrow .acts button.ok{color:var(--ok);border-bottom-color:var(--ok)}
 
 .setbox{margin-top:46px;padding-top:26px;border-top:1px solid var(--rule)}
-.srcbox{font-size:14px;color:var(--ink-2);max-width:40rem;display:grid;gap:30px}
-.srcbox label{display:block;font-size:14px;font-weight:500;color:var(--ink)}
-.srcbox label em{display:block;font-style:normal;font-weight:400;font-size:12.5px;color:var(--ink-3);margin-top:2px}
-.srcbox .state{margin-top:8px;font-size:12.5px;color:var(--ink-3)}
-.srcbox b{font-weight:500;color:var(--ink)}
-.srcbox .note{margin-top:10px;padding-left:12px;border-left:2px solid var(--pop);color:var(--ink-3);font-size:13px;line-height:1.55;
-  max-height:6.5em;overflow:auto}
-.srcrow{display:flex;gap:14px;align-items:center;margin-top:14px;max-width:34rem}
-.srcrow input{flex:1;background:transparent;border:none;border-bottom:1px solid var(--ink-3);padding:7px 2px;font-size:14px;color:var(--ink);border-radius:0}
-.srcbox button{font-size:13px;border-bottom:1px solid var(--ink-3);padding:2px 0;flex:none}
+.srcbox{font-size:14px;color:var(--ink-2);max-width:42rem;display:grid;gap:34px}
+.field label{display:block;font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);margin-bottom:12px}
+.field label em{font-style:normal;text-transform:none;letter-spacing:0}
+/* eine durchgehende Linie unter Feld und Knopf, nicht zwei getrennte */
+.srcrow{display:flex;align-items:center;gap:18px;border-bottom:1px solid var(--ink-3);padding-bottom:9px}
+.srcrow input{flex:1;min-width:0;background:transparent;border:none;padding:0;font-size:17px;color:var(--ink);border-radius:0}
+.srcrow input::placeholder{color:var(--ink-3)}
+.srcrow input:focus{outline:none}
+.srcrow:focus-within{border-bottom-color:var(--ink)}
+.srcrow button{flex:none;font-size:13.5px;color:var(--ink);border:none;padding:0}
+.srcbox .state{margin-top:10px;font-size:13px;color:var(--ink-3)}
+.srcbox .state.ok{color:var(--ok)}
+.srcbox .state.bad{color:var(--pop)}
+.srcbox .note{margin-top:10px;padding-left:12px;border-left:2px solid var(--pop);color:var(--ink-3);font-size:12.5px;
+  line-height:1.55;max-height:6.5em;overflow:auto}
 .foot{margin-top:40px;padding-top:22px;border-top:1px solid var(--rule);font-size:13px;color:var(--ink-3)}
 .foot button{font-size:13px;color:var(--ink-2);border-bottom:1px solid var(--rule);padding:2px 0;margin-right:20px}
 
@@ -715,7 +720,6 @@ async function pollNow(){
   paintNow();
 }
 
-function setNow(){ paintNow(); }
 
 /* ===================== RENDER ===================== */
 function sorted(){
@@ -855,9 +859,9 @@ function renderSetList(){
           '<input type="text" id="plTarget" value="'+esc(target)+'" placeholder="Playlist-Link oder ID">'+
           '<button id="saveTarget">Übernehmen</button>'+
         '</div>'+
-        '<div class="state">'+(playlistId
-            ? '✓ '+esc(playlistName||"verbunden")
-            : '✗ '+esc(playlistNote||"nicht verbunden"))+'</div>'+
+        '<div class="state '+(playlistId?"ok":"bad")+'">'+(playlistId
+            ? esc(playlistName||"verbunden")
+            : esc(playlistNote||"nicht verbunden"))+'</div>'+
       '</div>'+
       '<div class="field">'+
         '<label>Vorschlagsliste <em>liefert die Treffer beim Tippen</em></label>'+
@@ -865,7 +869,7 @@ function renderSetList(){
           '<input type="text" id="plName" value="'+esc(plname)+'" placeholder="Name der Playlist">'+
           '<button id="reloadKnown">Neu laden</button>'+
         '</div>'+
-        '<div class="state">'+esc(suggestSrc||"wird geladen…")+'</div>'+
+        '<div class="state'+(known.length?" ok":"")+'">'+esc(suggestSrc||"wird geladen…")+'</div>'+
         (suggestNote?'<div class="note">'+esc(suggestNote)+'</div>':'')+
       '</div>'+
     '</div>';
@@ -891,6 +895,53 @@ function renderSetList(){
     flash(known.length?("Vorschläge: "+known.length+" Songs"):"Keine Vorschläge geladen", known.length?"cool":"warn");
   });
 }
+
+/* ===================== EVENTS ===================== */
+$("#loginBtn").addEventListener("click",()=>login().catch(e=>showErr("#gateErr",e.message)));
+
+$("#q").addEventListener("input",function(){
+  const term=this.value.trim();
+  clearTimeout(searchTimer);
+  const typing=term.length>=1;
+  $("#peekWrap").classList.toggle("hide",typing||sorted().filter(w=>!w.played).length===0);
+  if(!typing){ $("#results").innerHTML=""; $("#quick").innerHTML=""; return; }
+  // Sofort: Treffer aus der Vorschlagsliste, ohne auf Spotify zu warten
+  renderQuick(knownMatches(term,3),term);
+  if(term.length<2){ $("#results").innerHTML=""; return; }
+  searchTimer=setTimeout(async()=>{
+    try{ renderResults(await search(term)); }
+    catch(e){ $("#results").innerHTML='<li class="empty"><b>Suche klemmt</b>'+esc(e.message)+'</li>'; }
+  },320);
+});
+
+$("#results").addEventListener("click",e=>{
+  const btn=e.target.closest("button[data-id]");
+  if(!btn) return;
+  const list=$("#results")._data||[];
+  const t=list.find(x=>x.id===btn.dataset.id);
+  if(!t) return;
+  addWish(t);
+  $("#q").value=""; $("#results").innerHTML=""; $("#quick").innerHTML=""; $("#q").focus();
+  renderPeek();
+});
+
+$("#djlist").addEventListener("click",async e=>{
+  const b=e.target.closest("button[data-a]");
+  if(!b) return;
+  const id=b.closest("li").dataset.id;
+  const w=findWish(id);
+  if(!w) return;
+  if(b.dataset.a==="play") await markPlayed(w);
+  if(b.dataset.a==="unplay"){
+    w.played=false; w.playedAt=null; saveWishes();
+    if(playlistId){ try{ await api("/playlists/"+playlistId+"/items",{method:"POST",body:{uris:[w.uri]}}); }catch(err){} }
+  }
+  if(b.dataset.a==="drop"){
+    wishes=wishes.filter(x=>x.id!==id); saveWishes();
+    if(playlistId){ try{ await api("/playlists/"+playlistId+"/items",{method:"DELETE",body:{tracks:[{uri:w.uri}]}}); }catch(err){} }
+  }
+  renderDj(); renderPeek();
+});
 
 function setMode(m){
   mode=m;
