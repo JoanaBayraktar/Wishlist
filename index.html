@@ -313,7 +313,8 @@ async function ensurePlaylist(){
 }
 
 async function search(term){
-  const j=await api("/search?type=track&limit=6&market=from_token&q="+encodeURIComponent(term));
+  const mkt=(me&&me.country)?("&market="+encodeURIComponent(me.country)):"";
+  const j=await api("/search?type=track&limit=6"+mkt+"&q="+encodeURIComponent(term));
   return ((j.tracks&&j.tracks.items)||[]).map(t=>({
     id:t.id, uri:t.uri, name:t.name,
     artist:(t.artists||[]).map(a=>a.name).join(", "),
@@ -529,7 +530,7 @@ async function boot(){
     me=await api("/me");
     await ensurePlaylist();
   }catch(e){
-    showErr("#gateErr","Anmeldung abgelaufen. Bitte neu verbinden.");
+    showErr("#gateErr","Verbindung fehlgeschlagen: "+e.message+" — bitte unten neu verbinden.");
     [LS.tok,LS.ref,LS.exp].forEach(store.del);
     return;
   }
