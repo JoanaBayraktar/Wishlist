@@ -129,10 +129,18 @@ h2.col{font-size:clamp(28px,3.6vw,42px);font-weight:500;letter-spacing:-1.1px;li
 .stat span{display:block;font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);margin-top:6px}
 .stat.h b{color:var(--pop)} .stat.c b{color:var(--ok)}
 .djlist{list-style:none;margin:0;padding:0}
+.djlist .group{display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+  margin:6px 0 4px;padding-bottom:8px;border-bottom:1.5px solid var(--ink)}
+.djlist .group.second{margin-top:44px}
+.djlist .group h4{font-size:17px;font-weight:500;letter-spacing:-.3px;margin:0}
+.djlist .group span{font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+.djlist .empty.small{padding:18px 0;font-size:14px}
+.djrow img{width:46px;height:46px;object-fit:cover;flex:none;background:var(--rule)}
+.djrow .when{font-size:12px;color:var(--ink-3);flex:none;font-variant-numeric:tabular-nums}
 .djrow{display:flex;align-items:center;gap:16px;padding:13px 0;border-bottom:1px solid var(--rule)}
 .djrow.played{opacity:.42}
-.djrow .votes{font-size:19px;font-weight:500;color:var(--pop);min-width:34px;flex:none}
-.djrow.played .votes{color:var(--ok);font-size:13px}
+.djrow .votes{font-size:18px;font-weight:500;color:var(--pop);min-width:32px;flex:none;font-variant-numeric:tabular-nums}
+.djrow.played .votes{color:var(--ok);font-size:15px}
 .djrow .t{flex:1;min-width:0}
 .djrow .t b{display:block;font-size:16.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .djrow .t span{display:block;font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);margin-top:2px;
@@ -142,7 +150,10 @@ h2.col{font-size:clamp(28px,3.6vw,42px);font-weight:500;letter-spacing:-1.1px;li
 .djrow .acts button.ok{color:var(--ok);border-bottom-color:var(--ok)}
 
 .setbox{margin-top:46px;padding-top:26px;border-top:1px solid var(--rule)}
-.srcbox{font-size:14px;color:var(--ink-2);max-width:56ch}
+.srcbox{font-size:14px;color:var(--ink-2);max-width:40rem;display:grid;gap:30px}
+.srcbox label{display:block;font-size:14px;font-weight:500;color:var(--ink)}
+.srcbox label em{display:block;font-style:normal;font-weight:400;font-size:12.5px;color:var(--ink-3);margin-top:2px}
+.srcbox .state{margin-top:8px;font-size:12.5px;color:var(--ink-3)}
 .srcbox b{font-weight:500;color:var(--ink)}
 .srcbox .note{margin-top:10px;padding-left:12px;border-left:2px solid var(--pop);color:var(--ink-3);font-size:13px;line-height:1.55;
   max-height:6.5em;overflow:auto}
@@ -225,7 +236,7 @@ h2.col{font-size:clamp(28px,3.6vw,42px);font-weight:500;letter-spacing:-1.1px;li
       <ul class="djlist" id="djlist"></ul>
 
       <div class="setbox">
-        <div class="sec-h"><h3>Vorschläge</h3><span id="setCount"></span></div>
+        <div class="sec-h"><h3>Playlists</h3><span id="setCount"></span></div>
         <div id="setList"></div>
       </div>
 
@@ -257,6 +268,7 @@ const SCOPES = [
 ].join(" ");
 const PLAYLIST_NAME = "Songwünsche";
 const SUGGEST_NAME  = "All Time Classic Party Hits by Joey";
+const TARGET_DEFAULT = "5pBBNmomqFijkD1xa4wrjk";   // Wunsch-Playlist
 const POLL_MS = 30000;          // Hörverlauf-Abgleich
 const NOW_MS  = 5000;           // Wiedergabe-Abfrage
 const TICK_MS = 1000;           // Anzeige weiterlaufen lassen
@@ -267,7 +279,7 @@ const LS = {
   tok:"sw_token", ref:"sw_refresh", exp:"sw_expires",
   ver:"sw_verifier", pl:"sw_playlist", wishes:"sw_wishes", known:"sw_known"
 };
-let token=null, playlistId=null, me=null;
+let token=null, playlistId=null, playlistName="", playlistNote="", me=null;
 let wishes=[];   // {id,name,artist,img,uri,key,votes,ts,played,playedAt}
 let known=[];    // Vorschlagsliste aus songs.json: {t,a,n} (n = normalisierter Suchtext)
 
@@ -521,25 +533,36 @@ async function api(path,opts){
   return j;
 }
 
+// Playlist-ID aus URL, URI oder purer ID herauslösen
+function playlistId4(v){
+  v=(v||"").trim();
+  let m=v.match(/playlist[\/:]([A-Za-z0-9]+)/);
+  if(m) return m[1];
+  if(/^[A-Za-z0-9]{16,}$/.test(v)) return v;
+  return "";
+}
+
 async function ensurePlaylist(){
-  const saved=store.get(LS.pl,null);
-  if(saved){
-    try{ await api("/playlists/"+saved+"?fields=id"); playlistId=saved; return; }catch(e){}
-  }
+  const want = playlistId4(store.get("sw_target", TARGET_DEFAULT)) || TARGET_DEFAULT;
+  try{
+    const p=await api("/playlists/"+want+"?fields=id,name");
+    playlistId=p.id; playlistName=p.name||""; store.set(LS.pl,playlistId);
+    return;
+  }catch(e){ playlistNote="Wunsch-Playlist nicht erreichbar: "+e.message; }
+  // Notfalls: nach Namen suchen, sonst neu anlegen
   try{
     const page=await api("/me/playlists?limit=50");
     const hit=(page.items||[]).find(p=>p && p.name===PLAYLIST_NAME && p.owner && p.owner.id===me.id);
-    if(hit){ playlistId=hit.id; store.set(LS.pl,playlistId); return; }
+    if(hit){ playlistId=hit.id; playlistName=hit.name; store.set(LS.pl,playlistId); return; }
   }catch(e){}
   try{
     const made=await api("/me/playlists",{method:"POST",body:{
       name:PLAYLIST_NAME, public:false,
       description:"Wünsche von heute Abend – füllt sich automatisch."
     }});
-    playlistId=made.id; store.set(LS.pl,playlistId);
-  }catch(e){
-    playlistId=null;   // App läuft trotzdem, nur ohne Playlist-Sync
-  }
+    playlistId=made.id; playlistName=made.name; store.set(LS.pl,playlistId);
+    playlistNote="";
+  }catch(e){ playlistId=null; }
 }
 
 async function search(term){
@@ -739,79 +762,45 @@ function renderPeek(){
   $("#peek").innerHTML=open.slice(0,8).map(w=>cardHtml(w,w.votes+"×","")).join("");
 }
 
+function djRow(w){
+  return '<li class="djrow'+(w.played?" played":"")+'" data-id="'+w.id+'">'+
+    '<span class="votes">'+(w.played?"✓":w.votes+"×")+'</span>'+
+    (w.img?'<img src="'+esc(w.img)+'" alt="">':'<img alt="">')+
+    '<span class="t"><b>'+esc(w.name)+'</b><span>'+esc(w.artist)+'</span></span>'+
+    '<span class="when">'+(w.played&&w.playedAt
+        ? new Date(w.playedAt).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"})
+        : new Date(w.ts).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"}))+'</span>'+
+    '<span class="acts">'+
+      (w.played ? '<button data-a="unplay">zurückholen</button>'
+                : '<button data-a="play" class="ok">gespielt</button>')+
+      '<button data-a="drop">entfernen</button>'+
+    '</span>'+
+  '</li>';
+}
+
 function renderDj(){
   const all=sorted();
-  const open=all.filter(w=>!w.played).length;
-  $("#sOpen").textContent=open;
-  $("#sPlayed").textContent=all.length-open;
+  const open=all.filter(w=>!w.played);
+  const done=all.filter(w=>w.played);
+  $("#sOpen").textContent=open.length;
+  $("#sPlayed").textContent=done.length;
   $("#sTotal").textContent=all.reduce((n,w)=>n+w.votes,0);
+
   const ul=$("#djlist");
   if(!all.length){
     ul.innerHTML='<li class="empty"><b>Noch keine Wünsche</b>Sobald am iPad jemand etwas aussucht, steht es hier.</li>';
     return;
   }
-  ul.innerHTML=all.map(w=>
-    '<li class="djrow'+(w.played?" played":"")+'" data-id="'+w.id+'">'+
-      '<span class="votes">'+w.votes+'×</span>'+
-      '<span class="t"><b>'+esc(w.name)+'</b><span>'+esc(w.artist)+
-        (w.played&&w.playedAt?' · lief '+new Date(w.playedAt).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"}):"")+
-      '</span></span>'+
-      '<span class="acts">'+
-        (w.played
-          ? '<button data-a="unplay">zurück</button>'
-          : '<button data-a="play" class="ok">gespielt</button>')+
-        '<button data-a="drop">×</button>'+
-      '</span>'+
-    '</li>'
-  ).join("");
+  let html="";
+  html+='<li class="group"><h4>Offen</h4><span>'+(open.length?"nach Stimmen sortiert":"alles abgearbeitet")+'</span></li>';
+  html+= open.length ? open.map(djRow).join("")
+                     : '<li class="empty small">Keine offenen Wünsche.</li>';
+  if(done.length){
+    html+='<li class="group second"><h4>Gespielt</h4><span>'+done.length+'</span></li>';
+    html+=done.map(djRow).join("");
+  }
+  ul.innerHTML=html;
 }
-
-/* ===================== EVENTS ===================== */
-$("#loginBtn").addEventListener("click",()=>login().catch(e=>showErr("#gateErr",e.message)));
-
-$("#q").addEventListener("input",function(){
-  const term=this.value.trim();
-  clearTimeout(searchTimer);
-  const typing=term.length>=1;
-  $("#peekWrap").classList.toggle("hide",typing||sorted().filter(w=>!w.played).length===0);
-  if(!typing){ $("#results").innerHTML=""; $("#quick").innerHTML=""; return; }
-  // Sofort: Treffer aus der mitgelieferten Songliste, ohne auf Spotify zu warten
-  renderQuick(knownMatches(term,3),term);
-  if(term.length<2){ $("#results").innerHTML=""; return; }
-  searchTimer=setTimeout(async()=>{
-    try{ renderResults(await search(term)); }
-    catch(e){ $("#results").innerHTML='<li class="empty"><b>Suche klemmt</b>'+esc(e.message)+'</li>'; }
-  },320);
-});
-
-$("#results").addEventListener("click",e=>{
-  const btn=e.target.closest("button[data-id]");
-  if(!btn) return;
-  const list=$("#results")._data||[];
-  const t=list.find(x=>x.id===btn.dataset.id);
-  if(!t) return;
-  addWish(t);
-  $("#q").value=""; $("#results").innerHTML=""; $("#quick").innerHTML=""; $("#q").focus();
-  renderPeek();
-});
-
-$("#djlist").addEventListener("click",async e=>{
-  const b=e.target.closest("button[data-a]");
-  if(!b) return;
-  const id=b.closest("li").dataset.id;
-  const w=findWish(id);
-  if(!w) return;
-  if(b.dataset.a==="play") await markPlayed(w);
-  if(b.dataset.a==="unplay"){
-    w.played=false; w.playedAt=null; saveWishes();
-    try{ await api("/playlists/"+playlistId+"/items",{method:"POST",body:{uris:[w.uri]}}); }catch(err){}
-  }
-  if(b.dataset.a==="drop"){
-    wishes=wishes.filter(x=>x.id!==id); saveWishes();
-    try{ await api("/playlists/"+playlistId+"/items",{method:"DELETE",body:{tracks:[{uri:w.uri}]}}); }catch(err){}
-  }
-  renderDj(); renderPeek();
-});
 
 function renderQuick(list,term){
   const box=$("#quick");
@@ -856,22 +845,48 @@ $("#quick").addEventListener("click",async e=>{
 function renderSetList(){
   const cnt=$("#setCount"); if(!cnt) return;
   const plname=store.get("sw_plname",SUGGEST_NAME);
-  cnt.textContent=suggestSrc||"wird geladen…";
+  const target=store.get("sw_target",TARGET_DEFAULT);
+  cnt.textContent = playlistId ? "verbunden" : "nicht verbunden";
   $("#setList").innerHTML =
     '<div class="srcbox">'+
-      'Die Vorschläge beim Tippen kommen aus der Spotify-Playlist <b>'+esc(plname)+'</b>.'+
-      (suggestNote?'<div class="note">'+esc(suggestNote)+'</div>':'')+
-      '<div class="srcrow">'+
-        '<input type="text" id="plName" value="'+esc(plname)+'" placeholder="Name der Playlist">'+
-        '<button id="reloadKnown">Neu laden</button>'+
+      '<div class="field">'+
+        '<label>Wunsch-Playlist <em>Wünsche landen hier, Gespieltes fliegt raus</em></label>'+
+        '<div class="srcrow">'+
+          '<input type="text" id="plTarget" value="'+esc(target)+'" placeholder="Playlist-Link oder ID">'+
+          '<button id="saveTarget">Übernehmen</button>'+
+        '</div>'+
+        '<div class="state">'+(playlistId
+            ? '✓ '+esc(playlistName||"verbunden")
+            : '✗ '+esc(playlistNote||"nicht verbunden"))+'</div>'+
+      '</div>'+
+      '<div class="field">'+
+        '<label>Vorschlagsliste <em>liefert die Treffer beim Tippen</em></label>'+
+        '<div class="srcrow">'+
+          '<input type="text" id="plName" value="'+esc(plname)+'" placeholder="Name der Playlist">'+
+          '<button id="reloadKnown">Neu laden</button>'+
+        '</div>'+
+        '<div class="state">'+esc(suggestSrc||"wird geladen…")+'</div>'+
+        (suggestNote?'<div class="note">'+esc(suggestNote)+'</div>':'')+
       '</div>'+
     '</div>';
+
+  const sb=$("#saveTarget");
+  if(sb) sb.addEventListener("click",async()=>{
+    const id=playlistId4($("#plTarget").value);
+    if(!id){ flash("Kein gültiger Playlist-Link","warn"); return; }
+    store.set("sw_target",id); store.del(LS.pl);
+    sb.textContent="prüft…"; playlistNote="";
+    await ensurePlaylist();
+    renderSetList();
+    flash(playlistId?"Playlist verbunden":"Playlist nicht erreichbar", playlistId?"cool":"warn");
+  });
+
   const rb=$("#reloadKnown");
   if(rb) rb.addEventListener("click",async()=>{
     const v=($("#plName").value||"").trim();
     if(v) store.set("sw_plname",v);
     rb.textContent="lädt…";
-    store.del(LS.known); known=[]; suggestSrc=""; 
+    store.del(LS.known); known=[]; suggestSrc="";
     await loadKnown();
     flash(known.length?("Vorschläge: "+known.length+" Songs"):"Keine Vorschläge geladen", known.length?"cool":"warn");
   });
