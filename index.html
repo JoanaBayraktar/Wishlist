@@ -144,7 +144,11 @@ h2.col{font-size:clamp(28px,3.6vw,42px);font-weight:500;letter-spacing:-1.1px;li
 .setbox{margin-top:46px;padding-top:26px;border-top:1px solid var(--rule)}
 .srcbox{font-size:14px;color:var(--ink-2);max-width:56ch}
 .srcbox b{font-weight:500;color:var(--ink)}
-.srcbox button{font-size:13px;border-bottom:1px solid var(--ink-3);padding:2px 0}
+.srcbox .note{margin-top:10px;padding-left:12px;border-left:2px solid var(--pop);color:var(--ink-3);font-size:13px;line-height:1.55;
+  max-height:6.5em;overflow:auto}
+.srcrow{display:flex;gap:14px;align-items:center;margin-top:14px;max-width:34rem}
+.srcrow input{flex:1;background:transparent;border:none;border-bottom:1px solid var(--ink-3);padding:7px 2px;font-size:14px;color:var(--ink);border-radius:0}
+.srcbox button{font-size:13px;border-bottom:1px solid var(--ink-3);padding:2px 0;flex:none}
 .foot{margin-top:40px;padding-top:22px;border-top:1px solid var(--rule);font-size:13px;color:var(--ink-3)}
 .foot button{font-size:13px;color:var(--ink-2);border-bottom:1px solid var(--rule);padding:2px 0;margin-right:20px}
 
@@ -267,41 +271,55 @@ let token=null, playlistId=null, me=null;
 let wishes=[];   // {id,name,artist,img,uri,key,votes,ts,played,playedAt}
 let known=[];    // Vorschlagsliste aus songs.json: {t,a,n} (n = normalisierter Suchtext)
 
-let suggestSrc="";   // woher die Vorschläge kommen (für die DJ-Ansicht)
+let suggestSrc="";     // Statuszeile für die DJ-Ansicht
+let suggestNote="";    // Details, falls es nicht geklappt hat
 
 // Vorschläge aus der Spotify-Playlist; Ergebnis wird lokal zwischengespeichert
 async function loadKnown(){
   const cached=readKnownCache();
   if(cached){ known=cached.list; suggestSrc=cached.src; renderSetList(); }
+  suggestNote="";
   try{
-    const pl=await findSuggestPlaylist();
-    if(pl){
+    const found=await findSuggestPlaylist();
+    if(!found.pl){
+      suggestNote="Keine Playlist mit diesem Namen gefunden. Gesehen wurden: "+
+        (found.names.length? found.names.slice(0,40).join(" · ") : "keine Playlists");
+    } else {
+      const pl=found.pl;
       if(cached && cached.snapshot===pl.snapshot_id && cached.list.length){
-        suggestSrc=SUGGEST_NAME+" ("+cached.list.length+" Songs)";
+        suggestSrc='„'+pl.name+'" · '+cached.list.length+" Songs";
         renderSetList(); return;
       }
       const list=await fetchPlaylistTracks(pl.id);
       if(list.length){
         known=list;
-        suggestSrc=SUGGEST_NAME+" ("+list.length+" Songs)";
+        suggestSrc='„'+pl.name+'" · '+list.length+" Songs";
         writeKnownCache(pl.snapshot_id,suggestSrc,list);
         renderSetList(); return;
       }
+      suggestNote='Playlist „'+pl.name+'" gefunden, aber keine Tracks gelesen.';
     }
-  }catch(e){}
-  if(!known.length) await loadKnownFallback();
+  }catch(e){ suggestNote="Fehler beim Laden: "+e.message; }
+  await loadKnownFallback();
   renderSetList();
 }
 
+// Vergleicht unempfindlich gegen Groß-/Kleinschreibung, Satzzeichen und Leerzeichen
 async function findSuggestPlaylist(){
+  const want=norm(store.get("sw_plname",SUGGEST_NAME));
+  const names=[];
   let url="/me/playlists?limit=50", guard=0;
-  while(url && guard++<6){
+  while(url && guard++<8){
     const page=await api(url.replace("https://api.spotify.com/v1",""));
-    const hit=(page.items||[]).find(p=>p && p.name && p.name.trim().toLowerCase()===SUGGEST_NAME.toLowerCase());
-    if(hit) return hit;
+    for(const p of (page.items||[])){
+      if(!p||!p.name) continue;
+      names.push(p.name);
+      const n=norm(p.name);
+      if(n===want||n.indexOf(want)>=0||want.indexOf(n)>=0) return {pl:p,names:names};
+    }
     url=page.next||null;
   }
-  return null;
+  return {pl:null,names:names};
 }
 
 async function fetchPlaylistTracks(id){
@@ -335,8 +353,8 @@ async function loadKnownFallback(){
       id:null, uri:null, name:s.t, artist:s.a||"", img:"",
       key:songKey(s.t,s.a||""), n:norm(s.t+" "+(s.a||""))
     }));
-    suggestSrc="songs.json aus dem Repo ("+known.length+" Songs)";
-  }catch(e){ known=[]; }
+    suggestSrc="Notfallliste songs.json · "+known.length+" Songs";
+  }catch(e){ known=[]; suggestSrc="keine Vorschläge geladen"; }
 }
 
 function readKnownCache(){
@@ -828,17 +846,25 @@ $("#quick").addEventListener("click",async e=>{
 
 function renderSetList(){
   const cnt=$("#setCount"); if(!cnt) return;
+  const plname=store.get("sw_plname",SUGGEST_NAME);
   cnt.textContent=suggestSrc||"wird geladen…";
   $("#setList").innerHTML =
-    '<div class="srcbox">Die Vorschläge beim Tippen kommen aus deiner Spotify-Playlist <b>'+esc(SUGGEST_NAME)+'</b>. '+
-    'Songs dort ändern, dann hier neu laden.'+
-    '<div style="margin-top:9px"><button id="reloadKnown">Vorschläge neu laden</button></div></div>';
+    '<div class="srcbox">'+
+      'Die Vorschläge beim Tippen kommen aus der Spotify-Playlist <b>'+esc(plname)+'</b>.'+
+      (suggestNote?'<div class="note">'+esc(suggestNote)+'</div>':'')+
+      '<div class="srcrow">'+
+        '<input type="text" id="plName" value="'+esc(plname)+'" placeholder="Name der Playlist">'+
+        '<button id="reloadKnown">Neu laden</button>'+
+      '</div>'+
+    '</div>';
   const rb=$("#reloadKnown");
   if(rb) rb.addEventListener("click",async()=>{
+    const v=($("#plName").value||"").trim();
+    if(v) store.set("sw_plname",v);
     rb.textContent="lädt…";
-    store.del(LS.known); known=[]; suggestSrc="";
+    store.del(LS.known); known=[]; suggestSrc=""; 
     await loadKnown();
-    flash("Vorschläge aktualisiert","cool");
+    flash(known.length?("Vorschläge: "+known.length+" Songs"):"Keine Vorschläge geladen", known.length?"cool":"warn");
   });
 }
 
