@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Songwünsche</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0b14; --panel:#181327; --panel-2:#211a36; --line:#2f2549;
+  --ink:#f4f0fb; --ink-2:#a698c6; --ink-3:#6d5f91;
+  --hot:#ff5a3c; --hot-ink:#1a0600;
+  --cool:#4dd6c1; --cool-dim:#153630;
+  --gold:#f0c24b;
+  --r:12px;
+  --sans:'Inter',system-ui,sans-serif;
+  --disp:'Archivo',var(--sans);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-text-size-adjust:100%}
+body{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+button{font-family:var(--sans);cursor:pointer;border:none;border-radius:9px}
+button:focus-visible,input:focus-visible{outline:2px solid var(--hot);outline-offset:2px}
+input{font-family:var(--sans)}
+
+/* ---------- shell ---------- */
+.shell{max-width:840px;margin:0 auto;padding:0 18px 60px}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 0 10px}
+.brand{font-family:var(--disp);font-weight:800;font-size:19px;letter-spacing:-.2px}
+.brand em{font-style:normal;color:var(--hot)}
+.modes{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:3px}
+.modes button{background:transparent;color:var(--ink-3);font-size:12.5px;font-weight:600;padding:6px 13px;border-radius:999px}
+.modes button.on{background:var(--panel-2);color:var(--ink)}
+
+/* ---------- gate ---------- */
+.gate{max-width:520px;margin:9vh auto;padding:0 20px;text-align:center}
+.gate h1{font-family:var(--disp);font-weight:800;font-size:clamp(34px,7vw,52px);line-height:.98;letter-spacing:-1.2px;margin:0 0 14px}
+.gate h1 em{font-style:normal;color:var(--hot)}
+.gate p{color:var(--ink-2);font-size:15px;line-height:1.55;margin:0 auto 26px;max-width:40ch}
+.big{background:var(--hot);color:var(--hot-ink);font-weight:700;font-size:16px;padding:15px 30px;border-radius:999px}
+.gate .fine{color:var(--ink-3);font-size:12.5px;margin-top:22px;line-height:1.6}
+
+/* ---------- kiosk ---------- */
+.kiosk-head{text-align:center;padding:26px 0 18px}
+.kiosk-head h2{font-family:var(--disp);font-weight:800;font-size:clamp(30px,6vw,46px);line-height:1;letter-spacing:-1px;margin:0 0 8px}
+.kiosk-head p{color:var(--ink-2);font-size:15px;margin:0}
+.searchbox{position:relative}
+#q{width:100%;background:var(--panel);border:1.5px solid var(--line);color:var(--ink);border-radius:14px;padding:18px 18px;font-size:19px}
+#q::placeholder{color:var(--ink-3)}
+.nowbar{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:10px 13px;margin:12px 0 0;font-size:13.5px;color:var(--ink-2)}
+.nowbar .dot{width:7px;height:7px;border-radius:50%;background:var(--cool);flex:none;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.nowbar .dot{animation:none}}
+.nowbar b{color:var(--ink);font-weight:600}
+
+.results{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:8px}
+.res{display:flex;align-items:center;gap:13px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:11px;text-align:left;width:100%;color:var(--ink)}
+.res:active{background:var(--panel-2)}
+.res img{width:56px;height:56px;border-radius:7px;flex:none;object-fit:cover;background:var(--panel-2)}
+.res .t{flex:1;min-width:0}
+.res .t b{display:block;font-size:16px;font-weight:600;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.res .t span{display:block;color:var(--ink-2);font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tag{font-size:11.5px;font-weight:600;padding:4px 9px;border-radius:999px;flex:none}
+.tag.add{background:var(--hot);color:var(--hot-ink)}
+.tag.dup{background:var(--panel-2);color:var(--gold);border:1px solid var(--line)}
+.tag.done{background:var(--cool-dim);color:var(--cool)}
+
+.flash{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--hot);color:var(--hot-ink);font-weight:700;font-size:15px;padding:13px 24px;border-radius:999px;z-index:30;box-shadow:0 8px 30px rgba(0,0,0,.5);max-width:90vw;text-align:center}
+.flash.cool{background:var(--cool);color:#04231d}
+.flash.warn{background:var(--gold);color:#241a00}
+
+.queue-peek{margin-top:26px}
+.queue-peek h3{font-family:var(--disp);font-size:13px;font-weight:700;color:var(--ink-3);margin:0 0 9px;letter-spacing:.3px}
+.peek{list-style:none;margin:0;padding:0;display:grid;gap:5px}
+.peek li{display:flex;align-items:center;gap:9px;font-size:14px;color:var(--ink-2);padding:7px 11px;background:var(--panel);border-radius:9px}
+.peek li .v{font-family:var(--disp);font-weight:700;color:var(--hot);font-size:13px;flex:none;min-width:22px}
+.peek li .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ---------- dj ---------- */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:6px 0 16px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px}
+.stat b{display:block;font-family:var(--disp);font-size:27px;font-weight:800;line-height:1}
+.stat span{display:block;color:var(--ink-3);font-size:12px;margin-top:4px}
+.stat.h b{color:var(--hot)} .stat.c b{color:var(--cool)}
+
+.djlist{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.djrow{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px}
+.djrow.played{opacity:.45}
+.djrow .votes{font-family:var(--disp);font-weight:800;font-size:19px;color:var(--hot);min-width:30px;text-align:center;flex:none}
+.djrow.played .votes{color:var(--cool)}
+.djrow .t{flex:1;min-width:0}
+.djrow .t b{display:block;font-size:15.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.djrow .t span{display:block;color:var(--ink-2);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.djrow .acts{display:flex;gap:6px;flex:none}
+.djrow .acts button{background:var(--panel-2);color:var(--ink-2);border:1px solid var(--line);font-size:12px;padding:7px 10px}
+.djrow .acts button.ok{color:var(--cool)}
+
+.empty{text-align:center;color:var(--ink-3);padding:46px 16px;font-size:14px;line-height:1.6}
+.empty b{display:block;font-family:var(--disp);font-size:21px;color:var(--ink-2);margin-bottom:6px}
+
+.foot{margin-top:26px;padding-top:16px;border-top:1px solid var(--line);color:var(--ink-3);font-size:12.5px;line-height:1.7}
+.foot button{background:transparent;color:var(--ink-3);border:1px solid var(--line);font-size:12px;padding:6px 11px;margin-right:6px}
+.err{background:#3d1512;border:1px solid var(--hot);color:#ffd2ca;border-radius:var(--r);padding:12px 14px;font-size:13.5px;margin:12px 0;line-height:1.55}
+.hide{display:none !important}
+.spin{display:inline-block;width:13px;height:13px;border:2px solid var(--ink-3);border-top-color:transparent;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- ============ GATE ============ -->
+<section id="gate" class="gate">
+  <h1>Song<em>wünsche</em></h1>
+  <p>Gäste suchen sich am iPad selbst ihren Track. Der landet automatisch in deiner Spotify-Playlist und verschwindet wieder, sobald du ihn gespielt hast.</p>
+  <button class="big" id="loginBtn">Mit Spotify verbinden</button>
+  <div id="gateErr"></div>
+  <p class="fine">Es wird eine private Playlist „Songwünsche" auf deinem Account angelegt. Gäste sehen nur die Suche, nie dein Konto.</p>
+</section>
+
+<!-- ============ APP ============ -->
+<div id="app" class="shell hide">
+  <div class="bar">
+    <div class="brand">Song<em>wünsche</em></div>
+    <div class="modes">
+      <button id="mKiosk" class="on">iPad</button>
+      <button id="mDj">DJ</button>
+    </div>
+  </div>
+
+  <!-- kiosk -->
+  <section id="kiosk">
+    <div class="kiosk-head">
+      <h2>Was willst du hören?</h2>
+      <p>Tippen, antippen, fertig.</p>
+    </div>
+    <div class="searchbox">
+      <input type="text" id="q" placeholder="Song oder Artist…" autocomplete="off" autocorrect="off" spellcheck="false">
+    </div>
+    <div class="nowbar hide" id="nowbar"><span class="dot"></span><span>Läuft gerade: <b id="nowTxt"></b></span></div>
+    <ul class="results" id="results"></ul>
+    <div class="queue-peek" id="peekWrap">
+      <h3>Steht schon auf der Liste</h3>
+      <ul class="peek" id="peek"></ul>
+    </div>
+  </section>
+
+  <!-- dj -->
+  <section id="dj" class="hide">
+    <div class="stats">
+      <div class="stat h"><b id="sOpen">0</b><span>offen</span></div>
+      <div class="stat c"><b id="sPlayed">0</b><span>gespielt</span></div>
+      <div class="stat"><b id="sTotal">0</b><span>Wünsche</span></div>
+    </div>
+    <ul class="djlist" id="djlist"></ul>
+    <div class="foot">
+      <button id="refreshBtn">Jetzt aktualisieren</button>
+      <button id="resetBtn">Abend beenden</button>
+      <button id="logoutBtn">Abmelden</button>
+      <div style="margin-top:10px" id="syncInfo"></div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ===================== KONFIG ===================== */
+const CLIENT_ID = "c4eadcad998d4361a45cf0b759a59f4e";
+const SCOPES = [
+  "playlist-modify-private",
+  "playlist-read-private",
+  "user-read-recently-played",
+  "user-read-currently-playing",
+  "user-read-private"
+].join(" ");
+const PLAYLIST_NAME = "Songwünsche";
+const POLL_MS = 30000;          // Hörverlauf-Abgleich
+const REDIRECT = location.origin + location.pathname;
+
+/* ===================== STATE ===================== */
+const LS = {
+  tok:"sw_token", ref:"sw_refresh", exp:"sw_expires",
+  ver:"sw_verifier", pl:"sw_playlist", wishes:"sw_wishes"
+};
+let token=null, playlistId=null, me=null;
+let wishes=[];   // {id,name,artist,img,uri,votes,ts,played,playedAt}
+let mode="kiosk";
+let pollTimer=null, searchTimer=null;
+
+/* ===================== HELFER ===================== */
+const $ = s => document.querySelector(s);
+const esc = s => (s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const store = {
+  get(k,f){ try{const v=localStorage.getItem(k);return v===null?f:v;}catch(e){return f;} },
+  set(k,v){ try{localStorage.setItem(k,v);}catch(e){} },
+  del(k){ try{localStorage.removeItem(k);}catch(e){} }
+};
+function loadWishes(){ try{wishes=JSON.parse(store.get(LS.wishes,"[]"))||[];}catch(e){wishes=[];} }
+function saveWishes(){ store.set(LS.wishes, JSON.stringify(wishes)); }
+
+let flashTimer=null;
+function flash(msg,kind){
+  document.querySelectorAll(".flash").forEach(n=>n.remove());
+  const d=document.createElement("div");
+  d.className="flash"+(kind?" "+kind:"");
+  d.textContent=msg;
+  document.body.appendChild(d);
+  clearTimeout(flashTimer);
+  flashTimer=setTimeout(()=>d.remove(),2600);
+}
+function showErr(where,msg){
+  const box=$(where);
+  if(!box) return;
+  box.innerHTML='<div class="err">'+esc(msg)+'</div>';
+}
+
+/* ===================== PKCE ===================== */
+function randStr(n){
+  const a=new Uint8Array(n); crypto.getRandomValues(a);
+  return Array.from(a,b=>("0"+b.toString(16)).slice(-2)).join("").slice(0,n);
+}
+async function challenge(verifier){
+  const data=new TextEncoder().encode(verifier);
+  const hash=await crypto.subtle.digest("SHA-256",data);
+  return btoa(String.fromCharCode(...new Uint8Array(hash)))
+    .replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+}
+async function login(){
+  const v=randStr(96);
+  store.set(LS.ver,v);
+  const c=await challenge(v);
+  const u=new URL("https://accounts.spotify.com/authorize");
+  u.searchParams.set("client_id",CLIENT_ID);
+  u.searchParams.set("response_type","code");
+  u.searchParams.set("redirect_uri",REDIRECT);
+  u.searchParams.set("scope",SCOPES);
+  u.searchParams.set("code_challenge_method","S256");
+  u.searchParams.set("code_challenge",c);
+  location.href=u.toString();
+}
+async function exchange(code){
+  const v=store.get(LS.ver,"");
+  const body=new URLSearchParams({
+    grant_type:"authorization_code", code, redirect_uri:REDIRECT,
+    client_id:CLIENT_ID, code_verifier:v
+  });
+  const r=await fetch("https://accounts.spotify.com/api/token",{
+    method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"}, body
+  });
+  const j=await r.json();
+  if(!r.ok) throw new Error(j.error_description||j.error||"Token-Austausch fehlgeschlagen");
+  keepToken(j);
+}
+async function refresh(){
+  const rt=store.get(LS.ref,null);
+  if(!rt) throw new Error("kein refresh token");
+  const body=new URLSearchParams({grant_type:"refresh_token",refresh_token:rt,client_id:CLIENT_ID});
+  const r=await fetch("https://accounts.spotify.com/api/token",{
+    method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"}, body
+  });
+  const j=await r.json();
+  if(!r.ok) throw new Error("Sitzung abgelaufen");
+  keepToken(j);
+}
+function keepToken(j){
+  token=j.access_token;
+  store.set(LS.tok,token);
+  if(j.refresh_token) store.set(LS.ref,j.refresh_token);
+  store.set(LS.exp, String(Date.now()+(j.expires_in||3600)*1000));
+}
+function tokenAlive(){
+  const e=parseInt(store.get(LS.exp,"0"),10);
+  return token && e>Date.now()+60000;
+}
+
+/* ===================== API ===================== */
+async function api(path,opts){
+  opts=opts||{};
+  if(!tokenAlive()) await refresh();
+  const r=await fetch("https://api.spotify.com/v1"+path,{
+    method:opts.method||"GET",
+    headers:Object.assign({"Authorization":"Bearer "+token,"Content-Type":"application/json"},opts.headers||{}),
+    body:opts.body?JSON.stringify(opts.body):undefined
+  });
+  if(r.status===401){ await refresh(); return api(path,opts); }
+  if(r.status===204) return null;
+  if(r.status===429){
+    const wait=parseInt(r.headers.get("Retry-After")||"2",10);
+    await new Promise(res=>setTimeout(res,wait*1000));
+    return api(path,opts);
+  }
+  const j=await r.json().catch(()=>null);
+  if(!r.ok) throw new Error((j&&j.error&&j.error.message)||("HTTP "+r.status));
+  return j;
+}
+
+async function ensurePlaylist(){
+  const saved=store.get(LS.pl,null);
+  if(saved){
+    try{ await api("/playlists/"+saved+"?fields=id"); playlistId=saved; return; }catch(e){}
+  }
+  const page=await api("/me/playlists?limit=50");
+  const hit=(page.items||[]).find(p=>p && p.name===PLAYLIST_NAME && p.owner && p.owner.id===me.id);
+  if(hit){ playlistId=hit.id; store.set(LS.pl,playlistId); return; }
+  const made=await api("/users/"+me.id+"/playlists",{method:"POST",body:{
+    name:PLAYLIST_NAME, public:false,
+    description:"Wünsche von heute Abend – füllt sich automatisch."
+  }});
+  playlistId=made.id; store.set(LS.pl,playlistId);
+}
+
+async function search(term){
+  const j=await api("/search?type=track&limit=6&market=from_token&q="+encodeURIComponent(term));
+  return ((j.tracks&&j.tracks.items)||[]).map(t=>({
+    id:t.id, uri:t.uri, name:t.name,
+    artist:(t.artists||[]).map(a=>a.name).join(", "),
+    img:(t.album&&t.album.images&&t.album.images.length)?t.album.images[t.album.images.length-1].url:""
+  }));
+}
+
+/* ===================== WUNSCH-LOGIK ===================== */
+function findWish(id){ return wishes.find(w=>w.id===id); }
+
+async function addWish(track){
+  const ex=findWish(track.id);
+  if(ex){
+    if(ex.played){ flash("Lief heute schon", "cool"); return; }
+    ex.votes++; saveWishes(); renderPeek();
+    flash("Schon drauf – dein +1 zählt ("+ex.votes+"×)","warn");
+    return;
+  }
+  const w={id:track.id,uri:track.uri,name:track.name,artist:track.artist,img:track.img,
+           votes:1,ts:Date.now(),played:false,playedAt:null};
+  wishes.push(w); saveWishes(); renderPeek(); renderDj();
+  flash("Kommt auf die Liste");
+  try{
+    await api("/playlists/"+playlistId+"/tracks",{method:"POST",body:{uris:[track.uri]}});
+  }catch(e){
+    flash("Playlist-Fehler – steht aber auf der Liste","warn");
+  }
+}
+
+async function markPlayed(w,when){
+  if(w.played) return;
+  w.played=true; w.playedAt=when||Date.now(); saveWishes();
+  try{
+    await api("/playlists/"+playlistId+"/tracks",{method:"DELETE",body:{tracks:[{uri:w.uri}]}});
+  }catch(e){}
+}
+
+async function syncHistory(){
+  try{
+    const j=await api("/me/player/recently-played?limit=50");
+    let changed=false;
+    (j.items||[]).forEach(it=>{
+      if(!it.track) return;
+      const w=findWish(it.track.id);
+      if(w&&!w.played){ markPlayed(w,new Date(it.played_at).getTime()); changed=true; }
+    });
+    let nowTxt="";
+    try{
+      const cur=await api("/me/player/currently-playing");
+      if(cur&&cur.item){
+        nowTxt=cur.item.name+" – "+(cur.item.artists||[]).map(a=>a.name).join(", ");
+        const w=findWish(cur.item.id);
+        if(w&&!w.played){ markPlayed(w); changed=true; }
+      }
+    }catch(e){}
+    setNow(nowTxt);
+    $("#syncInfo").textContent="Zuletzt abgeglichen: "+new Date().toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
+    if(changed){ renderPeek(); renderDj(); }
+  }catch(e){
+    $("#syncInfo").textContent="Abgleich gerade nicht möglich ("+e.message+")";
+  }
+}
+function setNow(txt){
+  const bar=$("#nowbar");
+  if(txt){ $("#nowTxt").textContent=txt; bar.classList.remove("hide"); }
+  else bar.classList.add("hide");
+}
+
+/* ===================== RENDER ===================== */
+function sorted(){
+  return wishes.slice().sort((a,b)=>{
+    if(a.played!==b.played) return a.played?1:-1;
+    if(b.votes!==a.votes) return b.votes-a.votes;
+    return a.ts-b.ts;
+  });
+}
+
+function renderResults(list){
+  const ul=$("#results");
+  if(!list.length){ ul.innerHTML=""; return; }
+  ul.innerHTML=list.map(t=>{
+    const w=findWish(t.id);
+    let tag='<span class="tag add">Wünschen</span>';
+    if(w&&w.played) tag='<span class="tag done">lief schon</span>';
+    else if(w) tag='<span class="tag dup">+1 ('+w.votes+'×)</span>';
+    return '<li><button class="res" data-id="'+t.id+'">'+
+      (t.img?'<img src="'+esc(t.img)+'" alt="">':'<img alt="">')+
+      '<span class="t"><b>'+esc(t.name)+'</b><span>'+esc(t.artist)+'</span></span>'+
+      tag+'</button></li>';
+  }).join("");
+  ul._data=list;
+}
+
+function renderPeek(){
+  const open=sorted().filter(w=>!w.played).slice(0,6);
+  $("#peekWrap").classList.toggle("hide",open.length===0);
+  $("#peek").innerHTML=open.map(w=>
+    '<li><span class="v">'+w.votes+'×</span><span class="nm">'+esc(w.name)+' – '+esc(w.artist)+'</span></li>'
+  ).join("");
+}
+
+function renderDj(){
+  const all=sorted();
+  const open=all.filter(w=>!w.played).length;
+  $("#sOpen").textContent=open;
+  $("#sPlayed").textContent=all.length-open;
+  $("#sTotal").textContent=all.reduce((n,w)=>n+w.votes,0);
+  const ul=$("#djlist");
+  if(!all.length){
+    ul.innerHTML='<li class="empty"><b>Noch keine Wünsche</b>Sobald am iPad jemand etwas aussucht, steht es hier.</li>';
+    return;
+  }
+  ul.innerHTML=all.map(w=>
+    '<li class="djrow'+(w.played?" played":"")+'" data-id="'+w.id+'">'+
+      '<span class="votes">'+w.votes+'×</span>'+
+      '<span class="t"><b>'+esc(w.name)+'</b><span>'+esc(w.artist)+
+        (w.played&&w.playedAt?' · lief '+new Date(w.playedAt).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"}):"")+
+      '</span></span>'+
+      '<span class="acts">'+
+        (w.played
+          ? '<button data-a="unplay">zurück</button>'
+          : '<button data-a="play" class="ok">gespielt</button>')+
+        '<button data-a="drop">×</button>'+
+      '</span>'+
+    '</li>'
+  ).join("");
+}
+
+/* ===================== EVENTS ===================== */
+$("#loginBtn").addEventListener("click",()=>login().catch(e=>showErr("#gateErr",e.message)));
+
+$("#q").addEventListener("input",function(){
+  const term=this.value.trim();
+  clearTimeout(searchTimer);
+  if(term.length<2){ $("#results").innerHTML=""; return; }
+  searchTimer=setTimeout(async()=>{
+    try{ renderResults(await search(term)); }
+    catch(e){ $("#results").innerHTML='<li class="empty">Suche gerade nicht erreichbar.</li>'; }
+  },320);
+});
+
+$("#results").addEventListener("click",e=>{
+  const btn=e.target.closest("button[data-id]");
+  if(!btn) return;
+  const list=$("#results")._data||[];
+  const t=list.find(x=>x.id===btn.dataset.id);
+  if(!t) return;
+  addWish(t);
+  $("#q").value=""; $("#results").innerHTML=""; $("#q").focus();
+});
+
+$("#djlist").addEventListener("click",async e=>{
+  const b=e.target.closest("button[data-a]");
+  if(!b) return;
+  const id=b.closest("li").dataset.id;
+  const w=findWish(id);
+  if(!w) return;
+  if(b.dataset.a==="play") await markPlayed(w);
+  if(b.dataset.a==="unplay"){
+    w.played=false; w.playedAt=null; saveWishes();
+    try{ await api("/playlists/"+playlistId+"/tracks",{method:"POST",body:{uris:[w.uri]}}); }catch(err){}
+  }
+  if(b.dataset.a==="drop"){
+    wishes=wishes.filter(x=>x.id!==id); saveWishes();
+    try{ await api("/playlists/"+playlistId+"/tracks",{method:"DELETE",body:{tracks:[{uri:w.uri}]}}); }catch(err){}
+  }
+  renderDj(); renderPeek();
+});
+
+function setMode(m){
+  mode=m;
+  $("#mKiosk").classList.toggle("on",m==="kiosk");
+  $("#mDj").classList.toggle("on",m==="dj");
+  $("#kiosk").classList.toggle("hide",m!=="kiosk");
+  $("#dj").classList.toggle("hide",m!=="dj");
+  if(m==="kiosk"){ $("#q").value=""; $("#results").innerHTML=""; renderPeek(); }
+  else renderDj();
+}
+$("#mKiosk").addEventListener("click",()=>setMode("kiosk"));
+$("#mDj").addEventListener("click",()=>setMode("dj"));
+
+$("#refreshBtn").addEventListener("click",syncHistory);
+$("#resetBtn").addEventListener("click",()=>{
+  if(!confirm("Alle Wünsche des Abends löschen? Die Spotify-Playlist bleibt bestehen.")) return;
+  wishes=[]; saveWishes(); renderDj(); renderPeek(); flash("Liste geleert","cool");
+});
+$("#logoutBtn").addEventListener("click",()=>{
+  [LS.tok,LS.ref,LS.exp,LS.pl].forEach(store.del);
+  location.href=REDIRECT;
+});
+
+/* ===================== START ===================== */
+async function boot(){
+  loadWishes();
+  const params=new URLSearchParams(location.search);
+  if(params.get("error")){
+    showErr("#gateErr","Spotify hat abgelehnt: "+params.get("error"));
+    history.replaceState({},"",REDIRECT); return;
+  }
+  if(params.get("code")){
+    try{
+      await exchange(params.get("code"));
+      history.replaceState({},"",REDIRECT);
+    }catch(e){
+      showErr("#gateErr",e.message+" — stimmt die Redirect URI in den Spotify-App-Settings mit "+REDIRECT+" überein?");
+      history.replaceState({},"",REDIRECT); return;
+    }
+  }
+  token=store.get(LS.tok,null);
+  if(!token && !store.get(LS.ref,null)) return;   // Gate bleibt
+  try{
+    if(!tokenAlive()) await refresh();
+    me=await api("/me");
+    await ensurePlaylist();
+  }catch(e){
+    showErr("#gateErr","Anmeldung abgelaufen. Bitte neu verbinden.");
+    [LS.tok,LS.ref,LS.exp].forEach(store.del);
+    return;
+  }
+  $("#gate").classList.add("hide");
+  $("#app").classList.remove("hide");
+  setMode("kiosk");
+  renderPeek(); renderDj();
+  syncHistory();
+  pollTimer=setInterval(syncHistory,POLL_MS);
+}
+boot();
+})();
+</script>
+</body>
+</html>
