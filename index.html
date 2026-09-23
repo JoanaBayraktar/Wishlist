@@ -901,8 +901,8 @@ function cardHtml(t,badge,cls){
 function renderPeek(){
   const open=sorted().filter(w=>!w.played);
   $("#peekWrap").classList.toggle("hide",open.length===0);
-  $("#peekMore").textContent = open.length>8 ? ("+"+(open.length-8)+" weitere") : "";
-  $("#peek").innerHTML=open.slice(0,8).map(w=>cardHtml(w,w.votes+"×","")).join("");
+  $("#peekMore").textContent = open.length ? (open.length+(open.length===1?" Wunsch":" Wünsche")) : "";
+  $("#peek").innerHTML=open.map(w=>cardHtml(w,w.votes+"×","")).join("");
 }
 
 function djRow(w){
