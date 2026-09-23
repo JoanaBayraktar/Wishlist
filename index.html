@@ -110,15 +110,20 @@ h2.col{font-size:clamp(28px,3.6vw,42px);font-weight:500;letter-spacing:-1.1px;li
 .fold svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .fold:hover{color:var(--ink)}
 .nowcard.folded .fold{transform:rotate(-180deg)}
-.nowcard.folded .nowmain{margin-bottom:4px}
-.nowcard.folded .nowmain img{width:54px;height:54px}
+
+/* eingeklappt: Cover+Wave nebeneinander, Titel/Interpret und Zeit darunter, keine Fortschrittslinie */
+.nowcard.folded .nowgrid{
+  grid-template-columns:54px auto;
+  grid-template-areas:"cover wave" "meta meta" "time time";
+  align-items:center;
+  column-gap:14px;
+}
+.nowcard.folded .now-cover{width:54px;height:54px;margin-bottom:0}
+.nowcard.folded .nowmeta{margin-bottom:0}
 .nowcard.folded .nowmeta b{font-size:17px}
-.nowmain img{transition:width .42s cubic-bezier(.4,0,.2,1),height .42s cubic-bezier(.4,0,.2,1)}
-.nowmain{transition:margin-bottom .42s ease}
-/* eingeklappt: Wave/Zeitleiste bleiben sichtbar, nur kleiner */
-.nowcard.folded .wave{height:22px;margin-bottom:8px}
-.nowcard.folded .progress{height:2px}
-.nowcard.folded .times{font-size:10.5px;margin-top:6px}
+.nowcard.folded .wave{width:160px;height:26px;gap:1px;margin-bottom:0}
+.nowcard.folded .progress{display:none}
+.nowcard.folded .times{font-size:10.5px;margin-top:4px}
 
 .marquee{position:relative;overflow:hidden;white-space:nowrap}
 .marquee>span{display:inline-block;white-space:nowrap;will-change:transform}
@@ -129,7 +134,7 @@ h2.col{font-size:clamp(28px,3.6vw,42px);font-weight:500;letter-spacing:-1.1px;li
 }
 @media (prefers-reduced-motion:reduce){
   .marquee.runs>span{animation:none}
-  .nowmain img,.fold,.wave,.progress,.times{transition:none}
+  .now-cover,.fold,.wave,.progress,.times{transition:none}
 }
 
 /* ---------- Mobil: nichts darf seitlich überlaufen ---------- */
@@ -142,7 +147,7 @@ h2.col{font-size:clamp(28px,3.6vw,42px);font-weight:500;letter-spacing:-1.1px;li
   .quick .qa{flex:none;max-width:38%}
   .res .t b,.card .t b{font-size:15.5px}
   .tag{font-size:10.5px;padding-left:8px}
-  .nowmain img{width:96px;height:96px}
+  .now-cover{width:96px;height:96px}
   .nowmeta b{font-size:19px}
   .djrow{flex-wrap:wrap}
   .djrow .when{order:3}
@@ -150,20 +155,28 @@ h2.col{font-size:clamp(28px,3.6vw,42px);font-weight:500;letter-spacing:-1.1px;li
   .stats{gap:24px}
 }
 .nowcard{margin:0 0 42px;padding-bottom:30px;border-bottom:1px solid var(--rule)}
-.nowmain{display:flex;align-items:flex-end;gap:18px;margin-bottom:22px}
-.nowmain img{width:132px;height:132px;object-fit:cover;flex:none;background:var(--rule);filter:grayscale(1)}
-.nowmeta{min-width:0;padding-bottom:2px}
+.nowgrid{
+  display:grid;
+  grid-template-columns:auto 1fr;
+  grid-template-areas:"cover meta" "wave wave" "prog prog" "time time";
+  align-items:end;
+  column-gap:18px;
+  transition:grid-template-columns .42s cubic-bezier(.4,0,.2,1),column-gap .42s cubic-bezier(.4,0,.2,1);
+}
+.now-cover{grid-area:cover;width:132px;height:132px;object-fit:cover;background:var(--rule);filter:grayscale(1);
+  margin-bottom:22px;transition:width .42s cubic-bezier(.4,0,.2,1),height .42s cubic-bezier(.4,0,.2,1),margin-bottom .42s ease}
+.nowmeta{grid-area:meta;min-width:0;margin-bottom:22px;transition:margin-bottom .42s ease}
 .nowmeta b{display:block;font-size:22px;font-weight:500;letter-spacing:-.5px;line-height:1.15;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .nowmeta span{display:block;font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);margin-top:7px;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.wave{display:flex;align-items:flex-end;gap:2px;height:52px;margin-bottom:14px;
-  transition:height .42s cubic-bezier(.4,0,.2,1),margin-bottom .42s cubic-bezier(.4,0,.2,1)}
-.wave i{flex:1;background:var(--rule);min-width:2px;transition:background .25s linear}
+.wave{grid-area:wave;display:flex;align-items:flex-end;gap:2px;height:52px;margin-bottom:14px;
+  transition:height .42s cubic-bezier(.4,0,.2,1),margin-bottom .42s cubic-bezier(.4,0,.2,1),gap .3s ease,width .3s ease}
+.wave i{flex:1;background:var(--rule);min-width:1px;transition:background .25s linear}
 .wave i.on{background:var(--ink)}
-.progress{height:3px;background:var(--rule);position:relative;transition:height .3s ease}
+.progress{grid-area:prog;height:3px;background:var(--rule);position:relative;transition:height .3s ease}
 .progress span{position:absolute;inset:0 auto 0 0;background:var(--ink);width:0;transition:width .9s linear}
-.times{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-3);margin-top:8px;
+.times{grid-area:time;display:flex;justify-content:space-between;font-size:12px;color:var(--ink-3);margin-top:8px;
   font-variant-numeric:tabular-nums;transition:font-size .3s ease,margin-top .3s ease}
 @media (prefers-reduced-motion:reduce){ .wave i,.progress span{transition:none} }
 
@@ -258,7 +271,8 @@ h2.col{font-size:clamp(28px,3.6vw,42px);font-weight:500;letter-spacing:-1.1px;li
 .err{border-left:2px solid var(--pop);padding:12px 0 12px 15px;margin:18px 0;font-size:14.5px;color:var(--ink-2);max-width:56ch}
 .err b{color:var(--ink);font-weight:500}
 .err button{font-size:13px;border-bottom:1px solid var(--ink-3);padding:2px 0;margin-top:8px;display:inline-block}
-.flash{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:var(--ink);color:var(--white);
+.flash{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 18px);transform:translateX(-50%);
+  background:var(--ink);color:var(--white);
   font-size:15px;padding:14px 26px;border-radius:2px;z-index:30;max-width:90vw;text-align:center}
 .flash.cool{background:var(--ok)}
 .flash.warn{background:var(--pop)}
@@ -323,14 +337,12 @@ h2.col{font-size:clamp(28px,3.6vw,42px);font-weight:500;letter-spacing:-1.1px;li
               </button>
             </div>
           </div>
-          <div class="nowmain">
-            <img id="nowImg" alt="">
+          <div class="nowgrid" id="nowgrid">
+            <img id="nowImg" alt="" class="now-cover">
             <div class="nowmeta">
               <b class="marquee" id="nowTxt"><span></span></b>
               <span id="nowArtist"></span>
             </div>
-          </div>
-          <div class="nowbody" id="nowbody">
             <div class="wave" id="wave" aria-hidden="true"></div>
             <div class="progress"><span id="progFill"></span></div>
             <div class="times"><span id="tNow">0:00</span><span id="tEnd">0:00</span></div>
@@ -561,8 +573,8 @@ function loadWishes(){
 function saveWishes(){ store.set(LS.wishes, JSON.stringify(wishes)); }
 
 const OK_ICON='<svg class="ok-circle" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">'+
-  '<circle cx="12" cy="12" r="11" fill="var(--ok)"/>'+
-  '<path class="ok-check" d="M6.5 12.6 L10 16.2 L17.5 8" fill="none" stroke="#fff" stroke-width="2.3" '+
+  '<circle cx="12" cy="12" r="11" fill="#fff"/>'+
+  '<path class="ok-check" d="M6.5 12.6 L10 16.2 L17.5 8" fill="none" stroke="var(--ink)" stroke-width="2.3" '+
   'stroke-linecap="round" stroke-linejoin="round" pathLength="1"/></svg>';
 
 let flashTimer=null;
@@ -1080,10 +1092,16 @@ $("#q").addEventListener("keydown",e=>{
 
 $("#clearBtn").addEventListener("click",endSearch);
 
-// Beim Scrollen (z.B. um in den Treffern zu suchen) Tastatur schließen
-window.addEventListener("scroll",()=>{
-  if(document.activeElement===$("#q")) $("#q").blur();
-},{passive:true});
+// Beim Scrollen (z.B. um in den Treffern zu suchen) Tastatur schließen –
+// aber nicht direkt nach dem Fokussieren, sonst schließt das automatische
+// Ins-Bild-Scrollen beim Tippen die Tastatur sofort wieder
+let qFocusedAt=0;
+$("#q").addEventListener("focus",()=>{ qFocusedAt=Date.now(); });
+function blurIfScrolling(){
+  if(document.activeElement===$("#q") && Date.now()-qFocusedAt>500) $("#q").blur();
+}
+window.addEventListener("touchmove",blurIfScrolling,{passive:true});
+window.addEventListener("scroll",blurIfScrolling,{passive:true});
 
 $("#foldBtn").addEventListener("click",()=>{
   const card=$("#nowbar");
