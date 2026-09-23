@@ -113,17 +113,18 @@ h2.col{font-size:clamp(28px,3.6vw,42px);font-weight:500;letter-spacing:-1.1px;li
 
 /* eingeklappt: Cover+Wave nebeneinander, Titel/Interpret und Zeit darunter, keine Fortschrittslinie */
 .nowcard.folded .nowgrid{
-  grid-template-columns:54px auto;
-  grid-template-areas:"cover wave" "meta meta" "time time";
+  grid-template-columns:54px max-content 1fr;
+  grid-template-areas:"cover wave filler" "meta meta meta" "time time time";
   align-items:center;
   column-gap:14px;
+  row-gap:6px;
 }
 .nowcard.folded .now-cover{width:54px;height:54px;margin-bottom:0}
 .nowcard.folded .nowmeta{margin-bottom:0}
 .nowcard.folded .nowmeta b{font-size:17px}
-.nowcard.folded .wave{width:160px;height:26px;gap:1px;margin-bottom:0}
+.nowcard.folded .wave{width:130px;height:26px;gap:1px;margin-bottom:0}
 .nowcard.folded .progress{display:none}
-.nowcard.folded .times{font-size:10.5px;margin-top:4px}
+.nowcard.folded .times{font-size:10.5px;margin-top:0}
 
 .marquee{position:relative;overflow:hidden;white-space:nowrap}
 .marquee>span{display:inline-block;white-space:nowrap;will-change:transform}
