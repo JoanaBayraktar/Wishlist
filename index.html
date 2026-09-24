@@ -1365,7 +1365,9 @@ function fitColRight(){
   const el=document.querySelector(".colRight");
   if(!el) return;
   if(window.innerWidth<821){ el.style.maxHeight=""; return; }
-  const h=window.innerHeight-el.offsetTop-24;
+  const sheet=document.querySelector(".sheet");
+  const bottomPad=(sheet&&parseFloat(getComputedStyle(sheet).paddingBottom))||24;
+  const h=window.innerHeight-el.offsetTop-bottomPad;
   el.style.maxHeight=Math.max(200,h)+"px";
 }
 window.addEventListener("resize",fitColRight);
