@@ -841,7 +841,7 @@ async function addWish(track){
   flash("Kommt auf die Liste","added");
   if(!playlistId) return;
   try{
-    await api("/playlists/"+playlistId+"/items",{method:"POST",body:{uris:[track.uri]}});
+    await api("/playlists/"+playlistId+"/tracks",{method:"POST",body:{uris:[track.uri]}});
   }catch(e){
     flash("Playlist-Fehler – steht aber auf der Liste","warn");
   }
@@ -852,7 +852,7 @@ async function markPlayed(w,when){
   w.played=true; w.playedAt=when||Date.now(); saveWishes();
   if(!playlistId) return;
   try{
-    await api("/playlists/"+playlistId+"/items",{method:"DELETE",body:{tracks:[{uri:w.uri}]}});
+    await api("/playlists/"+playlistId+"/tracks",{method:"DELETE",body:{tracks:[{uri:w.uri}]}});
   }catch(e){}
 }
 
@@ -1239,11 +1239,11 @@ $("#djlist").addEventListener("click",async e=>{
   if(b.dataset.a==="play") await markPlayed(w);
   if(b.dataset.a==="unplay"){
     w.played=false; w.playedAt=null; saveWishes();
-    if(playlistId){ try{ await api("/playlists/"+playlistId+"/items",{method:"POST",body:{uris:[w.uri]}}); }catch(err){} }
+    if(playlistId){ try{ await api("/playlists/"+playlistId+"/tracks",{method:"POST",body:{uris:[w.uri]}}); }catch(err){} }
   }
   if(b.dataset.a==="drop"){
     wishes=wishes.filter(x=>x.id!==id); saveWishes();
-    if(playlistId){ try{ await api("/playlists/"+playlistId+"/items",{method:"DELETE",body:{tracks:[{uri:w.uri}]}}); }catch(err){} }
+    if(playlistId){ try{ await api("/playlists/"+playlistId+"/tracks",{method:"DELETE",body:{tracks:[{uri:w.uri}]}}); }catch(err){} }
   }
   renderDj(); renderPeek();
 });
