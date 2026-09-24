@@ -530,7 +530,8 @@ async function fetchPlaylistTracks(id){
       out.push({
         id:tid, uri:t.uri||("spotify:track:"+tid), name:t.name, artist:artist,
         img:imgs.length?imgs[imgs.length-1].url:"",
-        key:songKey(t.name,artist), n:norm(t.name+" "+artist)
+        key:songKey(t.name,artist), n:norm(t.name+" "+artist),
+        addedAt: it.added_at ? new Date(it.added_at).getTime() : null
       });
     });
     url=page.next||null;
@@ -870,6 +871,28 @@ async function syncHistory(){
   }catch(e){
     $("#syncInfo").textContent="Abgleich gerade nicht möglich ("+e.message+")";
   }
+}
+
+// Holt Songs, die in der Spotify-Playlist stehen, aber noch nicht auf der
+// lokalen Wunschliste sind (z.B. von einem anderen Gerät oder direkt in
+// Spotify hinzugefügt) und ergänzt sie, damit "Als nächstes gewünscht"
+// immer der tatsächlichen Playlist entspricht.
+async function syncPlaylistWishes(){
+  if(!playlistId) return;
+  try{
+    const tracks=await fetchPlaylistTracks(playlistId);
+    let changed=false;
+    tracks.forEach((t,i)=>{
+      if(findWish(t.id)||findByKey(t.key)) return;
+      wishes.push({
+        id:t.id, uri:t.uri, name:t.name, artist:t.artist, img:t.img, key:t.key,
+        votes:1, ts:t.addedAt||(Date.now()-(tracks.length-i)*1000),
+        played:false, playedAt:null
+      });
+      changed=true;
+    });
+    if(changed){ saveWishes(); renderPeek(); renderDj(); }
+  }catch(e){}
 }
 /* ===================== LÄUFT GERADE ===================== */
 const WAVE_BARS=56;
@@ -1286,8 +1309,8 @@ async function boot(){
   setMode("kiosk");
   loadKnown();
   renderPeek(); renderDj();
-  syncHistory(); pollNow();
-  pollTimer=setInterval(syncHistory,POLL_MS);
+  syncPlaylistWishes().then(()=>{ syncHistory(); }); pollNow();
+  pollTimer=setInterval(()=>{ syncPlaylistWishes(); syncHistory(); },POLL_MS);
   setInterval(pollNow,NOW_MS);
   setInterval(paintNow,TICK_MS);
 }
