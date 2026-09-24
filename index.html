@@ -331,6 +331,7 @@ h2.col{font-size:clamp(28px,3.6vw,42px);font-weight:500;letter-spacing:-1.1px;li
     <button class="big" id="loginBtn">Mit Spotify verbinden</button>
     <div id="gateErr"></div>
     <p class="fine">Es wird eine private Playlist „Songwünsche" auf deinem Account angelegt. Gäste sehen nur die Suche, nie dein Konto.</p>
+    <pre id="debugLog" class="fine" style="white-space:pre-wrap;opacity:.6;margin-top:14px"></pre>
   </section>
 
   <!-- App -->
@@ -460,6 +461,17 @@ let known=[];    // Vorschlagsliste aus songs.json: {t,a,n} (n = normalisierter 
 
 let suggestSrc="";     // Statuszeile für die DJ-Ansicht
 let suggestNote="";    // Details, falls es nicht geklappt hat
+
+// Vorübergehender Diagnose-Trail für den Login-Redirect (verschwindet nicht
+// beim schnellen Hin-und-Zurückspringen zu Spotify, weil er in localStorage
+// statt in der (bei Navigation geleerten) Konsole steht).
+function dbg(msg){
+  const log=JSON.parse(store.get("sw_dbg","[]"));
+  log.push(new Date().toLocaleTimeString("de-DE")+" "+msg);
+  store.set("sw_dbg", JSON.stringify(log.slice(-12)));
+  const el=document.getElementById("debugLog");
+  if(el) el.textContent=log.join("\n");
+}
 
 // Vorschläge aus der Spotify-Playlist; Ergebnis wird lokal zwischengespeichert
 async function loadKnown(){
@@ -670,10 +682,12 @@ async function login(){
   u.searchParams.set("scope",SCOPES);
   u.searchParams.set("code_challenge_method","S256");
   u.searchParams.set("code_challenge",c);
+  dbg("login: verifier gespeichert, leite weiter zu Spotify");
   location.href=u.toString();
 }
 async function exchange(code){
   const v=store.get(LS.ver,"");
+  dbg("exchange: code erhalten, verifier "+(v?"vorhanden ("+v.length+" Zeichen)":"FEHLT"));
   const body=new URLSearchParams({
     grant_type:"authorization_code", code, redirect_uri:REDIRECT,
     client_id:CLIENT_ID, code_verifier:v
@@ -682,7 +696,11 @@ async function exchange(code){
     method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"}, body
   });
   const j=await r.json();
-  if(!r.ok) throw new Error(j.error_description||j.error||"Token-Austausch fehlgeschlagen");
+  if(!r.ok){
+    dbg("exchange: fehlgeschlagen – "+(j.error_description||j.error));
+    throw new Error(j.error_description||j.error||"Token-Austausch fehlgeschlagen");
+  }
+  dbg("exchange: erfolgreich, Token gespeichert");
   keepToken(j);
 }
 async function refresh(){
@@ -1273,8 +1291,12 @@ $("#logoutBtn").addEventListener("click",()=>{
 /* ===================== START ===================== */
 async function boot(){
   loadWishes();
+  const dl=document.getElementById("debugLog");
+  if(dl) dl.textContent=JSON.parse(store.get("sw_dbg","[]")).join("\n");
   const params=new URLSearchParams(location.search);
+  dbg("boot: geladen, search="+(location.search||"(leer)"));
   if(params.get("error")){
+    dbg("boot: error-Parameter von Spotify: "+params.get("error"));
     showErr("#gateErr","Spotify hat abgelehnt: "+params.get("error"));
     history.replaceState({},"",REDIRECT); return;
   }
@@ -1288,16 +1310,18 @@ async function boot(){
     }
   }
   token=store.get(LS.tok,null);
-  if(!token && !store.get(LS.ref,null)) return;   // Gate bleibt
+  if(!token && !store.get(LS.ref,null)){ dbg("boot: kein Token/Refresh – Gate bleibt"); return; }   // Gate bleibt
   try{
     if(!tokenAlive()) await refresh();
     me=await api("/me");
     await ensurePlaylist();
   }catch(e){
+    dbg("boot: Verbindung fehlgeschlagen – "+e.message);
     showErr("#gateErr","Verbindung fehlgeschlagen: "+e.message+" — bitte unten neu verbinden.");
     [LS.tok,LS.ref,LS.exp].forEach(store.del);
     return;
   }
+  dbg("boot: erfolgreich verbunden, Playlist="+(playlistId||"keine"));
   $("#gate").classList.add("hide");
   $("#app").classList.remove("hide");
   if(!playlistId){
