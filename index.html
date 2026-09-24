@@ -963,9 +963,10 @@ async function pollNow(){
 
 /* ===================== RENDER ===================== */
 function sorted(){
+  // Reihenfolge = Reihenfolge in der Spotify-Playlist (Hinzufügezeitpunkt),
+  // damit Anzeige und tatsächliche Abspielreihenfolge übereinstimmen.
   return wishes.slice().sort((a,b)=>{
     if(a.played!==b.played) return a.played?1:-1;
-    if(b.votes!==a.votes) return b.votes-a.votes;
     return a.ts-b.ts;
   });
 }
@@ -1039,7 +1040,7 @@ function renderDj(){
     return;
   }
   let html="";
-  html+='<li class="group"><h4>Offen</h4><span>'+(open.length?"nach Stimmen sortiert":"alles abgearbeitet")+'</span></li>';
+  html+='<li class="group"><h4>Offen</h4><span>'+(open.length?"in Playlist-Reihenfolge":"alles abgearbeitet")+'</span></li>';
   html+= open.length ? open.map(djRow).join("")
                      : '<li class="empty small">Keine offenen Wünsche.</li>';
   if(done.length){
