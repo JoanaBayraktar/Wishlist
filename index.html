@@ -1313,12 +1313,24 @@ async function boot(){
   if(!token && !store.get(LS.ref,null)){ dbg("boot: kein Token/Refresh – Gate bleibt"); return; }   // Gate bleibt
   try{
     if(!tokenAlive()) await refresh();
+  }catch(e){
+    dbg("boot: Sitzung abgelaufen – "+e.message);
+    showErr("#gateErr","Sitzung abgelaufen: "+e.message+" — bitte unten neu verbinden.");
+    [LS.tok,LS.ref,LS.exp].forEach(store.del);
+    return;
+  }
+  try{
     me=await api("/me");
     await ensurePlaylist();
   }catch(e){
-    dbg("boot: Verbindung fehlgeschlagen – "+e.message);
-    showErr("#gateErr","Verbindung fehlgeschlagen: "+e.message+" — bitte unten neu verbinden.");
-    [LS.tok,LS.ref,LS.exp].forEach(store.del);
+    // Nur ein einzelner Abruf ist fehlgeschlagen (z.B. kurzer Netzwerk-Hänger
+    // direkt nach dem Redirect) – der Token ist noch gültig, also nicht
+    // rauswerfen, sondern einfach nochmal versuchen lassen.
+    dbg("boot: Profil/Playlist-Abruf fehlgeschlagen – "+e.message);
+    showErr("#gateErr","Verbindung kurz gestört: "+e.message);
+    const box=$("#gateErr");
+    box.innerHTML+='<div style="margin-top:10px"><button id="retryBtn" class="big" style="padding:9px 18px;font-size:14px">Erneut versuchen</button></div>';
+    $("#retryBtn").addEventListener("click",boot);
     return;
   }
   dbg("boot: erfolgreich verbunden, Playlist="+(playlistId||"keine"));
