@@ -59,6 +59,16 @@ input{font:inherit}
 /* ---------- Spalten ---------- */
 .cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:clamp(28px,5vw,72px);align-items:start}
 @media (max-width:820px){ .cols{grid-template-columns:minmax(0,1fr);gap:38px} }
+/* Rechte Spalte (Läuft gerade + Wunschliste) scrollt für sich, die Suche links bleibt stehen */
+@media (min-width:821px){
+  .colRight{
+    position:sticky;
+    top:clamp(24px,4vw,52px);
+    max-height:calc(100vh - clamp(24px,4vw,52px) - 32px);
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+}
 h2.col{font-size:clamp(28px,3.6vw,42px);font-weight:500;letter-spacing:-1.1px;line-height:1.05;margin:0 0 22px}
 .meta{font-size:11.5px;letter-spacing:.09em;color:var(--ink-3);text-transform:uppercase}
 
@@ -150,6 +160,9 @@ h2.col{font-size:clamp(28px,3.6vw,42px);font-weight:500;letter-spacing:-1.1px;li
   .stats{gap:24px}
 }
 .nowcard{margin:0 0 42px;padding-bottom:30px;border-bottom:1px solid var(--rule)}
+.nowEmpty{margin:0 0 42px;padding-bottom:30px;border-bottom:1px solid var(--rule)}
+.nowEmpty h3{font-size:19px;font-weight:500;letter-spacing:-.3px;margin:0 0 14px}
+.nowEmpty p{margin:0;color:var(--ink-3);font-size:15px}
 .nowgrid{
   display:flex;
   flex-wrap:wrap;
@@ -340,7 +353,7 @@ h2.col{font-size:clamp(28px,3.6vw,42px);font-weight:500;letter-spacing:-1.1px;li
         <div class="quicks" id="quick"></div>
         <ul class="results" id="results"></ul>
       </div>
-      <div>
+      <div class="colRight">
         <section class="nowcard hide" id="nowbar">
           <div class="sec-h">
             <h3>Läuft gerade</h3>
@@ -361,6 +374,10 @@ h2.col{font-size:clamp(28px,3.6vw,42px);font-weight:500;letter-spacing:-1.1px;li
             <div class="times"><span id="tNow">0:00</span><span id="tEnd">0:00</span></div>
           </div>
         </section>
+        <div class="nowEmpty" id="nowEmpty">
+          <h3>Läuft gerade</h3>
+          <p>Gerade läuft nichts.</p>
+        </div>
         <div id="peekWrap" class="hide">
           <div class="sec-h"><h3>Als Nächstes gewünscht</h3><span id="peekMore"></span></div>
           <ul class="grid" id="peek"></ul>
@@ -901,8 +918,13 @@ function setMarquee(text){
 
 function paintNow(){
   const card=$("#nowbar");
-  if(!nowState){ card.classList.add("hide"); return; }
+  if(!nowState){
+    card.classList.add("hide");
+    $("#nowEmpty").classList.remove("hide");
+    return;
+  }
   card.classList.remove("hide");
+  $("#nowEmpty").classList.add("hide");
   const n=nowState;
   const pos = n.playing ? Math.min(n.duration, n.progress + (Date.now()-n.at)) : n.progress;
   const ratio = n.duration ? pos/n.duration : 0;
