@@ -331,6 +331,8 @@ h2.col{font-size:clamp(28px,3.6vw,42px);font-weight:500;letter-spacing:-1.1px;li
     <button class="big" id="loginBtn">Mit Spotify verbinden</button>
     <div id="gateErr"></div>
     <p class="fine">Es wird eine private Playlist „Songwünsche" auf deinem Account angelegt. Gäste sehen nur die Suche, nie dein Konto.</p>
+    <button id="debugToggle" style="background:none;border:1px solid var(--rule);border-radius:4px;padding:4px 10px;margin-top:22px;font-size:11px;color:var(--ink-3);cursor:pointer">Diagnose anzeigen</button>
+    <pre id="debugLog" class="fine hide" style="white-space:pre-wrap;opacity:.75;margin-top:8px"></pre>
   </section>
 
   <!-- App -->
@@ -403,6 +405,8 @@ h2.col{font-size:clamp(28px,3.6vw,42px);font-weight:500;letter-spacing:-1.1px;li
         <button id="resetBtn">Abend beenden</button>
         <button id="logoutBtn">Abmelden</button>
         <div style="margin-top:12px" id="syncInfo"></div>
+        <button id="debugToggle2" style="background:none;border:1px solid var(--rule);border-radius:4px;padding:4px 10px;margin-top:14px;font-size:11px;color:var(--ink-3);cursor:pointer">Diagnose anzeigen</button>
+        <pre id="debugLog2" class="fine hide" style="white-space:pre-wrap;opacity:.75;margin-top:8px"></pre>
       </div>
     </section>
 
@@ -460,6 +464,19 @@ let known=[];    // Vorschlagsliste aus songs.json: {t,a,n} (n = normalisierter 
 
 let suggestSrc="";     // Statuszeile für die DJ-Ansicht
 let suggestNote="";    // Details, falls es nicht geklappt hat
+
+// Vorübergehender Diagnose-Trail für den Login-Redirect (verschwindet nicht
+// beim schnellen Hin-und-Zurückspringen zu Spotify, weil er in localStorage
+// statt in der (bei Navigation geleerten) Konsole steht).
+function dbg(msg){
+  const log=JSON.parse(store.get("sw_dbg","[]"));
+  log.push(new Date().toLocaleTimeString("de-DE")+" "+msg);
+  store.set("sw_dbg", JSON.stringify(log.slice(-20)));
+  ["debugLog","debugLog2"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.textContent=log.join("\n");
+  });
+}
 
 // Vorschläge aus der Spotify-Playlist; Ergebnis wird lokal zwischengespeichert
 async function loadKnown(){
@@ -530,7 +547,8 @@ async function fetchPlaylistTracks(id){
       out.push({
         id:tid, uri:t.uri||("spotify:track:"+tid), name:t.name, artist:artist,
         img:imgs.length?imgs[imgs.length-1].url:"",
-        key:songKey(t.name,artist), n:norm(t.name+" "+artist)
+        key:songKey(t.name,artist), n:norm(t.name+" "+artist),
+        addedAt: it.added_at ? new Date(it.added_at).getTime() : null
       });
     });
     url=page.next||null;
@@ -669,26 +687,42 @@ async function login(){
   u.searchParams.set("scope",SCOPES);
   u.searchParams.set("code_challenge_method","S256");
   u.searchParams.set("code_challenge",c);
+  dbg("login: verifier gespeichert, leite weiter zu Spotify");
   location.href=u.toString();
+}
+// fetch() hat von Haus aus kein Timeout – bei einer Verbindung, die nicht
+// antwortet (statt sauber einen Fehler zu liefern), würde sonst für immer
+// gewartet, ohne dass je ein Fehler oder Retry ausgelöst wird.
+function fetchTimeout(url,opts,ms){
+  const ctrl=new AbortController();
+  const t=setTimeout(()=>ctrl.abort(),ms||5000);
+  return fetch(url,Object.assign({},opts,{signal:ctrl.signal}))
+    .catch(e=>{ if(e.name==="AbortError") throw new Error("Zeitüberschreitung"); throw e; })
+    .finally(()=>clearTimeout(t));
 }
 async function exchange(code){
   const v=store.get(LS.ver,"");
+  dbg("exchange: code erhalten, verifier "+(v?"vorhanden ("+v.length+" Zeichen)":"FEHLT"));
   const body=new URLSearchParams({
     grant_type:"authorization_code", code, redirect_uri:REDIRECT,
     client_id:CLIENT_ID, code_verifier:v
   });
-  const r=await fetch("https://accounts.spotify.com/api/token",{
+  const r=await fetchTimeout("https://accounts.spotify.com/api/token",{
     method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"}, body
   });
   const j=await r.json();
-  if(!r.ok) throw new Error(j.error_description||j.error||"Token-Austausch fehlgeschlagen");
+  if(!r.ok){
+    dbg("exchange: fehlgeschlagen – "+(j.error_description||j.error));
+    throw new Error(j.error_description||j.error||"Token-Austausch fehlgeschlagen");
+  }
+  dbg("exchange: erfolgreich, Token gespeichert");
   keepToken(j);
 }
 async function refresh(){
   const rt=store.get(LS.ref,null);
   if(!rt) throw new Error("kein refresh token");
   const body=new URLSearchParams({grant_type:"refresh_token",refresh_token:rt,client_id:CLIENT_ID});
-  const r=await fetch("https://accounts.spotify.com/api/token",{
+  const r=await fetchTimeout("https://accounts.spotify.com/api/token",{
     method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"}, body
   });
   const j=await r.json();
@@ -711,7 +745,7 @@ function tokenAlive(){
 async function api(path,opts){
   opts=opts||{};
   if(!tokenAlive()) await refresh();
-  const r=await fetch("https://api.spotify.com/v1"+path,{
+  const r=await fetchTimeout("https://api.spotify.com/v1"+path,{
     method:opts.method||"GET",
     headers:Object.assign({"Authorization":"Bearer "+token,"Content-Type":"application/json"},opts.headers||{}),
     body:opts.body?JSON.stringify(opts.body):undefined
@@ -840,9 +874,10 @@ async function addWish(track){
   flash("Kommt auf die Liste","added");
   if(!playlistId) return;
   try{
-    await api("/playlists/"+playlistId+"/items",{method:"POST",body:{uris:[track.uri]}});
+    await api("/playlists/"+playlistId+"/tracks",{method:"POST",body:{uris:[track.uri]}});
   }catch(e){
-    flash("Playlist-Fehler – steht aber auf der Liste","warn");
+    dbg("addWish: Playlist-POST fehlgeschlagen – "+e.message);
+    flash("Playlist-Fehler ("+e.message+") – steht aber auf der Liste","warn");
   }
 }
 
@@ -851,7 +886,7 @@ async function markPlayed(w,when){
   w.played=true; w.playedAt=when||Date.now(); saveWishes();
   if(!playlistId) return;
   try{
-    await api("/playlists/"+playlistId+"/items",{method:"DELETE",body:{tracks:[{uri:w.uri}]}});
+    await api("/playlists/"+playlistId+"/tracks",{method:"DELETE",body:{tracks:[{uri:w.uri}]}});
   }catch(e){}
 }
 
@@ -870,6 +905,28 @@ async function syncHistory(){
   }catch(e){
     $("#syncInfo").textContent="Abgleich gerade nicht möglich ("+e.message+")";
   }
+}
+
+// Holt Songs, die in der Spotify-Playlist stehen, aber noch nicht auf der
+// lokalen Wunschliste sind (z.B. von einem anderen Gerät oder direkt in
+// Spotify hinzugefügt) und ergänzt sie, damit "Als nächstes gewünscht"
+// immer der tatsächlichen Playlist entspricht.
+async function syncPlaylistWishes(){
+  if(!playlistId) return;
+  try{
+    const tracks=await fetchPlaylistTracks(playlistId);
+    let changed=false;
+    tracks.forEach((t,i)=>{
+      if(findWish(t.id)||findByKey(t.key)) return;
+      wishes.push({
+        id:t.id, uri:t.uri, name:t.name, artist:t.artist, img:t.img, key:t.key,
+        votes:1, ts:t.addedAt||(Date.now()-(tracks.length-i)*1000),
+        played:false, playedAt:null
+      });
+      changed=true;
+    });
+    if(changed){ saveWishes(); renderPeek(); renderDj(); }
+  }catch(e){ dbg("syncPlaylistWishes: fehlgeschlagen – "+e.message); }
 }
 /* ===================== LÄUFT GERADE ===================== */
 const WAVE_BARS=56;
@@ -963,9 +1020,10 @@ async function pollNow(){
 
 /* ===================== RENDER ===================== */
 function sorted(){
+  // Reihenfolge = Reihenfolge in der Spotify-Playlist (Hinzufügezeitpunkt),
+  // damit Anzeige und tatsächliche Abspielreihenfolge übereinstimmen.
   return wishes.slice().sort((a,b)=>{
     if(a.played!==b.played) return a.played?1:-1;
-    if(b.votes!==a.votes) return b.votes-a.votes;
     return a.ts-b.ts;
   });
 }
@@ -1039,7 +1097,7 @@ function renderDj(){
     return;
   }
   let html="";
-  html+='<li class="group"><h4>Offen</h4><span>'+(open.length?"nach Stimmen sortiert":"alles abgearbeitet")+'</span></li>';
+  html+='<li class="group"><h4>Offen</h4><span>'+(open.length?"in Playlist-Reihenfolge":"alles abgearbeitet")+'</span></li>';
   html+= open.length ? open.map(djRow).join("")
                      : '<li class="empty small">Keine offenen Wünsche.</li>';
   if(done.length){
@@ -1141,6 +1199,8 @@ function renderSetList(){
 
 /* ===================== EVENTS ===================== */
 $("#loginBtn").addEventListener("click",()=>login().catch(e=>showErr("#gateErr",e.message)));
+$("#debugToggle").addEventListener("click",()=>$("#debugLog").classList.toggle("hide"));
+$("#debugToggle2").addEventListener("click",()=>$("#debugLog2").classList.toggle("hide"));
 
 $("#q").addEventListener("input",function(){
   const term=this.value.trim();
@@ -1215,11 +1275,11 @@ $("#djlist").addEventListener("click",async e=>{
   if(b.dataset.a==="play") await markPlayed(w);
   if(b.dataset.a==="unplay"){
     w.played=false; w.playedAt=null; saveWishes();
-    if(playlistId){ try{ await api("/playlists/"+playlistId+"/items",{method:"POST",body:{uris:[w.uri]}}); }catch(err){} }
+    if(playlistId){ try{ await api("/playlists/"+playlistId+"/tracks",{method:"POST",body:{uris:[w.uri]}}); }catch(err){} }
   }
   if(b.dataset.a==="drop"){
     wishes=wishes.filter(x=>x.id!==id); saveWishes();
-    if(playlistId){ try{ await api("/playlists/"+playlistId+"/items",{method:"DELETE",body:{tracks:[{uri:w.uri}]}}); }catch(err){} }
+    if(playlistId){ try{ await api("/playlists/"+playlistId+"/tracks",{method:"DELETE",body:{tracks:[{uri:w.uri}]}}); }catch(err){} }
   }
   renderDj(); renderPeek();
 });
@@ -1249,8 +1309,14 @@ $("#logoutBtn").addEventListener("click",()=>{
 /* ===================== START ===================== */
 async function boot(){
   loadWishes();
+  ["debugLog","debugLog2"].forEach(id=>{
+    const dl=document.getElementById(id);
+    if(dl) dl.textContent=JSON.parse(store.get("sw_dbg","[]")).join("\n");
+  });
   const params=new URLSearchParams(location.search);
+  dbg("boot: geladen, search="+(location.search||"(leer)"));
   if(params.get("error")){
+    dbg("boot: error-Parameter von Spotify: "+params.get("error"));
     showErr("#gateErr","Spotify hat abgelehnt: "+params.get("error"));
     history.replaceState({},"",REDIRECT); return;
   }
@@ -1264,16 +1330,48 @@ async function boot(){
     }
   }
   token=store.get(LS.tok,null);
-  if(!token && !store.get(LS.ref,null)) return;   // Gate bleibt
+  if(!token && !store.get(LS.ref,null)){ dbg("boot: kein Token/Refresh – Gate bleibt"); return; }   // Gate bleibt
   try{
     if(!tokenAlive()) await refresh();
-    me=await api("/me");
-    await ensurePlaylist();
   }catch(e){
-    showErr("#gateErr","Verbindung fehlgeschlagen: "+e.message+" — bitte unten neu verbinden.");
+    dbg("boot: Sitzung abgelaufen – "+e.message);
+    showErr("#gateErr","Sitzung abgelaufen: "+e.message+" — bitte unten neu verbinden.");
     [LS.tok,LS.ref,LS.exp].forEach(store.del);
     return;
   }
+  // Sofort sichtbares Feedback, damit klar ist, dass gerade etwas läuft –
+  // sonst wirkt ein Versuch, der bis zu ~15s dauern kann, wie "nichts
+  // passiert", und man lädt die Seite neu, bevor er sich melden konnte.
+  $("#loginBtn").classList.add("hide");
+  $("#gateErr").innerHTML='<div class="err">Verbinde …</div>';
+  let profileErr=null;
+  for(let attempt=1; attempt<=3; attempt++){
+    $("#gateErr").innerHTML='<div class="err">Verbinde … (Versuch '+attempt+'/3)</div>';
+    try{
+      me=await api("/me");
+      await ensurePlaylist();
+      profileErr=null;
+      break;
+    }catch(e){
+      profileErr=e;
+      dbg("boot: Profil/Playlist-Abruf fehlgeschlagen (Versuch "+attempt+"/3) – "+e.message);
+      if(attempt<3) await new Promise(res=>setTimeout(res,500*attempt));
+    }
+  }
+  if(profileErr){
+    // Der Token ist noch gültig, nur der Abruf hat wiederholt nicht geklappt
+    // (z.B. Netzwerk-Hänger direkt nach dem Redirect) – also nicht rauswerfen,
+    // sondern nochmal versuchen lassen. "Mit Spotify verbinden" ausblenden,
+    // damit man hier klickt statt versehentlich die ganze Anmeldung neu zu
+    // starten (der Login selbst war ja schon erfolgreich).
+    $("#loginBtn").classList.add("hide");
+    showErr("#gateErr","Verbindung kurz gestört: "+profileErr.message);
+    const box=$("#gateErr");
+    box.innerHTML+='<div style="margin-top:10px"><button id="retryBtn" class="big" style="padding:9px 18px;font-size:14px">Erneut versuchen</button></div>';
+    $("#retryBtn").addEventListener("click",()=>{ $("#loginBtn").classList.remove("hide"); boot(); });
+    return;
+  }
+  dbg("boot: erfolgreich verbunden, Playlist="+(playlistId||"keine"));
   $("#gate").classList.add("hide");
   $("#app").classList.remove("hide");
   if(!playlistId){
@@ -1285,11 +1383,30 @@ async function boot(){
   setMode("kiosk");
   loadKnown();
   renderPeek(); renderDj();
-  syncHistory(); pollNow();
-  pollTimer=setInterval(syncHistory,POLL_MS);
+  syncPlaylistWishes().then(()=>{ syncHistory(); }); pollNow();
+  pollTimer=setInterval(()=>{ syncPlaylistWishes(); syncHistory(); },POLL_MS);
   setInterval(pollNow,NOW_MS);
   setInterval(paintNow,TICK_MS);
+  fitColRight();
 }
+
+// Die rechte Spalte bekommt per CSS eine max-height für ihr eigenes
+// Scrollen (siehe .colRight), berechnet aus ihrem sticky "top". Solange
+// sie noch nicht "eingerastet" ist, steht sie aber an ihrer normalen
+// Position weiter unten auf der Seite – dort reicht dieselbe max-height
+// über den Bildschirmrand hinaus und zieht die ganze Seite leicht nach
+// unten. Deshalb hier die tatsächlich verfügbare Höhe ab ihrer echten
+// Startposition ausrechnen und als exaktes Pixel-Limit setzen.
+function fitColRight(){
+  const el=document.querySelector(".colRight");
+  if(!el) return;
+  if(window.innerWidth<821){ el.style.maxHeight=""; return; }
+  const sheet=document.querySelector(".sheet");
+  const bottomPad=(sheet&&parseFloat(getComputedStyle(sheet).paddingBottom))||24;
+  const h=window.innerHeight-el.offsetTop-bottomPad;
+  el.style.maxHeight=Math.max(200,h)+"px";
+}
+window.addEventListener("resize",fitColRight);
 boot();
 })();
 </script>
