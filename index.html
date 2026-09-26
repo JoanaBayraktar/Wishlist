@@ -1329,18 +1329,30 @@ async function boot(){
     [LS.tok,LS.ref,LS.exp].forEach(store.del);
     return;
   }
-  try{
-    me=await api("/me");
-    await ensurePlaylist();
-  }catch(e){
-    // Nur ein einzelner Abruf ist fehlgeschlagen (z.B. kurzer Netzwerk-Hänger
-    // direkt nach dem Redirect) – der Token ist noch gültig, also nicht
-    // rauswerfen, sondern einfach nochmal versuchen lassen.
-    dbg("boot: Profil/Playlist-Abruf fehlgeschlagen – "+e.message);
-    showErr("#gateErr","Verbindung kurz gestört: "+e.message);
+  let profileErr=null;
+  for(let attempt=1; attempt<=3; attempt++){
+    try{
+      me=await api("/me");
+      await ensurePlaylist();
+      profileErr=null;
+      break;
+    }catch(e){
+      profileErr=e;
+      dbg("boot: Profil/Playlist-Abruf fehlgeschlagen (Versuch "+attempt+"/3) – "+e.message);
+      if(attempt<3) await new Promise(res=>setTimeout(res,800*attempt));
+    }
+  }
+  if(profileErr){
+    // Der Token ist noch gültig, nur der Abruf hat wiederholt nicht geklappt
+    // (z.B. Netzwerk-Hänger direkt nach dem Redirect) – also nicht rauswerfen,
+    // sondern nochmal versuchen lassen. "Mit Spotify verbinden" ausblenden,
+    // damit man hier klickt statt versehentlich die ganze Anmeldung neu zu
+    // starten (der Login selbst war ja schon erfolgreich).
+    $("#loginBtn").classList.add("hide");
+    showErr("#gateErr","Verbindung kurz gestört: "+profileErr.message);
     const box=$("#gateErr");
     box.innerHTML+='<div style="margin-top:10px"><button id="retryBtn" class="big" style="padding:9px 18px;font-size:14px">Erneut versuchen</button></div>';
-    $("#retryBtn").addEventListener("click",boot);
+    $("#retryBtn").addEventListener("click",()=>{ $("#loginBtn").classList.remove("hide"); boot(); });
     return;
   }
   dbg("boot: erfolgreich verbunden, Playlist="+(playlistId||"keine"));
