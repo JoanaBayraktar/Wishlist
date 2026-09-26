@@ -690,6 +690,16 @@ async function login(){
   dbg("login: verifier gespeichert, leite weiter zu Spotify");
   location.href=u.toString();
 }
+// fetch() hat von Haus aus kein Timeout – bei einer Verbindung, die nicht
+// antwortet (statt sauber einen Fehler zu liefern), würde sonst für immer
+// gewartet, ohne dass je ein Fehler oder Retry ausgelöst wird.
+function fetchTimeout(url,opts,ms){
+  const ctrl=new AbortController();
+  const t=setTimeout(()=>ctrl.abort(),ms||8000);
+  return fetch(url,Object.assign({},opts,{signal:ctrl.signal}))
+    .catch(e=>{ if(e.name==="AbortError") throw new Error("Zeitüberschreitung"); throw e; })
+    .finally(()=>clearTimeout(t));
+}
 async function exchange(code){
   const v=store.get(LS.ver,"");
   dbg("exchange: code erhalten, verifier "+(v?"vorhanden ("+v.length+" Zeichen)":"FEHLT"));
@@ -697,7 +707,7 @@ async function exchange(code){
     grant_type:"authorization_code", code, redirect_uri:REDIRECT,
     client_id:CLIENT_ID, code_verifier:v
   });
-  const r=await fetch("https://accounts.spotify.com/api/token",{
+  const r=await fetchTimeout("https://accounts.spotify.com/api/token",{
     method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"}, body
   });
   const j=await r.json();
@@ -712,7 +722,7 @@ async function refresh(){
   const rt=store.get(LS.ref,null);
   if(!rt) throw new Error("kein refresh token");
   const body=new URLSearchParams({grant_type:"refresh_token",refresh_token:rt,client_id:CLIENT_ID});
-  const r=await fetch("https://accounts.spotify.com/api/token",{
+  const r=await fetchTimeout("https://accounts.spotify.com/api/token",{
     method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"}, body
   });
   const j=await r.json();
@@ -735,7 +745,7 @@ function tokenAlive(){
 async function api(path,opts){
   opts=opts||{};
   if(!tokenAlive()) await refresh();
-  const r=await fetch("https://api.spotify.com/v1"+path,{
+  const r=await fetchTimeout("https://api.spotify.com/v1"+path,{
     method:opts.method||"GET",
     headers:Object.assign({"Authorization":"Bearer "+token,"Content-Type":"application/json"},opts.headers||{}),
     body:opts.body?JSON.stringify(opts.body):undefined
